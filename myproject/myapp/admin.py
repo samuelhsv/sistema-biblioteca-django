@@ -18,17 +18,17 @@ class MembroInline(admin.StackedInline):
 
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (MembroInline, )
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_member_type_display_for_admin')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_tipo_membro_display_for_admin')
     list_select_related = ('member',)
 
-    def get_member_type_display_for_admin(self, instance):
+    def get_tipo_membro_display_for_admin(self, instance):
         try:
             if hasattr(instance, 'member') and instance.member:
-                 return instance.member.get_member_type_display()
+                 return instance.member.get_tipo_membro_display()
         except Membro.DoesNotExist:
             return None
         return 'N/A'
-    get_member_type_display_for_admin.short_description = 'Member Type'
+    get_tipo_membro_display_for_admin.short_description = 'Member Type'
 
 class CategoriaAdmin(admin.ModelAdmin):
     list_display = ['nome']
@@ -82,8 +82,8 @@ class MembroAdmin(admin.ModelAdmin):
 
 # --- Updated EmprestimoAdmin ---
 class EmprestimoAdmin(admin.ModelAdmin):
-    list_display = ['livro_titulo_display', 'edicao_info', 'membro_username', 'data_emprestimo', 'data_devolucao', 'status', 'data_devolucao_real']
-    list_filter = ['status', 'membro__tipo_membro', 'data_emprestimo', 'data_devolucao']
+    list_display = ['livro_titulo_display', 'edicao_info', 'membro_username', 'data_emprestimo', 'data_prevista_devolucao', 'status', 'data_devolucao']
+    list_filter = ['status', 'membro__tipo_membro', 'data_emprestimo', 'data_prevista_devolucao']
     search_fields = ['livro__titulo', 'membro__usuario__username', 'edicao__numero_edicao']
     list_select_related = ('livro', 'edicao', 'membro', 'membro__usuario')
     autocomplete_fields = ['membro', 'livro', 'edicao']
@@ -96,8 +96,8 @@ class EmprestimoAdmin(admin.ModelAdmin):
     livro_titulo_display.admin_order_field = 'livro__titulo'
 
     def edicao_info(self, obj):
-        if obj.edition:
-            return f"Ed. {obj.edition.edition_number}"
+        if obj.edicao:
+            return f"Ed. {obj.edicao.numero_edicao}"
         return "N/A"
     edicao_info.short_description = 'Edicao'
 
@@ -113,8 +113,8 @@ class EmprestimoAdmin(admin.ModelAdmin):
             if req.livro.is_available: # Check karein ke livro abhi bhi available hai
                 req.status = 'EMITIDO' # Status ko 'EMITIDO' set karein
                 
-                if not req.data_devolucao: # Agar data_devolucao set nahi hai
-                    req.data_devolucao = (timezone.now() + timedelta(days=14)).date() # Example: 14 din
+                if not req.data_prevista_devolucao: # Agar data_prevista_devolucao set nahi hai
+                    req.data_prevista_devolucao = (timezone.now() + timedelta(days=14)).date() # Example: 14 din
                 
                 req.save() 
                 updated_count += 1
@@ -127,17 +127,17 @@ class EmprestimoAdmin(admin.ModelAdmin):
 
     def reject_selected_requests(self, request, queryset):
         
-        updated_count = queryset.filter(status='SOLICITADO').update(status='REJEITADO')
+        updated_count = queryset.filter(status='SOLICITADO').update(status='CANCELADO')
         
         if updated_count > 0:
-            self.message_user(request, f"{updated_count} request(s) successfully REJECTED.")
-    reject_selected_requests.short_description = "Reject selected requests"
+            self.message_user(request, f"{updated_count} request(s) successfully CANCELADO.")
+    reject_selected_requests.short_description = "Cancelar as solicitações selecionadas"
 
     def mark_as_returned_admin(self, request, queryset):
         updated_count = 0
         for req in queryset.filter(status='EMITIDO'): # Sirf 'EMITIDO' status wali books ko returned mark karein
             req.status = 'DEVOLVIDO'
-            req.data_devolucao_real = timezone.now().date() # Aaj ki date
+            req.data_devolucao = timezone.now().date() # Aaj ki date
             req.save() # Model ka overridden save() method call hoga (book availability update ke liye)
             updated_count += 1
         if updated_count > 0:

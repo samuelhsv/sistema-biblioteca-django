@@ -12,6 +12,11 @@ class Categoria(models.Model):
 class Autor(models.Model):
     primeiro_nome = models.CharField(max_length=50)
     sobrenome = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name = "Autor"
+        verbose_name_plural = "Autores" # 👈 This fixes "Autor
+
     def __str__(self):
         return f"{self.primeiro_nome} {self.sobrenome}"
 
@@ -47,16 +52,41 @@ class Edicao(models.Model):
     data_lancamento = models.DateField()
     paginas = models.PositiveIntegerField()
 
+    class Meta:
+        verbose_name = "Edição"
+        verbose_name_plural = "Edições" # 👈 This fixes "Edicaos"!
+
     def __str__(self):
-        return f"{self.Livro.titulo} - Edição {self.numero_edicao} ({self.data_lancamento.year})"
+        return f"{self.livro.titulo} - Edição {self.numero_edicao} ({self.data_lancamento.year})"
+
+from django.core.exceptions import ValidationError # ⚠️ Import this at the top!
 
 class Membro(models.Model):
     TIPOS_DE_MEMBRO = [
         ('ALUNO', 'Aluno'),
-        ('FUNCIONÁRIO', 'Funcionário'),
+        ('PROFESSOR', 'Professor'), # Updated to match your PDF spec
+        ('ADMIN', 'Administrador'),
     ]
     usuario = models.OneToOneField(AuthUser, on_delete=models.CASCADE, related_name='member')
     tipo_membro = models.CharField(max_length=20, choices=TIPOS_DE_MEMBRO)
+    
+    # Optional in DB layer because they depend on the member type
+    ra = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    siape = models.CharField(max_length=50, unique=True, null=True, blank=True)
+
+    def clean(self):
+        """
+        Runs custom validation rules from the PDF specification.
+        """
+        super().clean()
+        
+        # Rule 1: If student, RA is mandatory
+        if self.tipo_membro == 'ALUNO' and not self.ra:
+            raise ValidationError({'ra': 'O campo RA é obrigatório para alunos.'})
+        
+        # Rule 2: If professor, SIAPE is mandatory
+        if self.tipo_membro == 'PROFESSOR' and not self.siape:
+            raise ValidationError({'siape': 'O campo SIAPE é obrigatório para professores.'})
 
     def __str__(self):
         return f"{self.usuario.username} ({self.get_tipo_membro_display()})"
@@ -67,7 +97,7 @@ class Emprestimo(models.Model):
         ('EMITIDO', 'Emitido'),
         ('DEVOLVIDO', 'Devolvido'),
         ('ATRASADO', 'Atrasado'),
-        ('REJEITADO', 'Rejeitado'),
+        ('CANCELADO', 'Cancelado'),
     ]
     membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='livros_emprestados')
     livro = models.ForeignKey(Livro, on_delete=models.CASCADE, related_name='livros_emprestados')
@@ -79,8 +109,8 @@ class Emprestimo(models.Model):
         blank=True
     )
     data_emprestimo = models.DateTimeField(default=timezone.now)
-    data_devolucao = models.DateField()
-    data_devolucao_real = models.DateField(null=True, blank=True)
+    data_prevista_devolucao = models.DateField(null=True, blank=True)
+    data_devolucao = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_EMPRESTIMO, default='EMITIDO')
 
     __original_status = None
@@ -93,13 +123,13 @@ class Emprestimo(models.Model):
         super().save(*args, **kwargs)
         if self.status != self.__original_status:
             if self.status == 'EMITIDO':
-                self.Livro.disponivel = False
-                self.Livro.save(update_fields=['disponivel'])
-            elif self.status in ['DEVOLVIDO', 'REJEITADO'] and self.__original_status == 'EMITIDO':
-                if not Emprestimo.objects.filter(Livro=self.Livro, status='EMITIDO').exists():
-                    self.Livro.disponivel = True
-                    self.Livro.save(update_fields=['disponivel'])
+                self.livro.disponivel = False
+                self.livro.save(update_fields=['disponivel'])
+            elif self.status in ['DEVOLVIDO', 'CANCELADO'] and self.__original_status == 'EMITIDO':
+                if not Emprestimo.objects.filter(Livro=self.livro, status='EMITIDO').exists():
+                    self.livro.disponivel = True
+                    self.livro.save(update_fields=['disponivel'])
         self.__original_status = self.status
 
     def __str__(self):
-        return f"{self.Livro.titulo} emprestado para {self.member.usuario.username} ({self.status})"
+        return f"{self.livro.titulo} emprestado para {self.membro.usuario.username} ({self.status})"
