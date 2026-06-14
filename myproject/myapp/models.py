@@ -1,7 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User as AuthUser # Django's built-in User model
-
+from datetime import timedelta # ⚠️ ADD THIS IMPORT AT THE TOP OF YOUR FILE
+from django.core.exceptions import ValidationError
 
 
 class Categoria(models.Model):
@@ -15,7 +16,7 @@ class Autor(models.Model):
 
     class Meta:
         verbose_name = "Autor"
-        verbose_name_plural = "Autores" # 👈 This fixes "Autor
+        verbose_name_plural = "Autores" # This fixes "Autor
 
     def __str__(self):
         return f"{self.primeiro_nome} {self.sobrenome}"
@@ -33,15 +34,6 @@ class Livro(models.Model):
     editora = models.ForeignKey(Editora, on_delete=models.CASCADE, related_name='Livro')
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, related_name='Livros')
     disponivel = models.BooleanField(default=True)
-    
-    '''
-    # --- COVER IMAGE FIELD ADDED ---
-    cover_image = models.ImageField(
-        upload_to='Livro_covers/', 
-        null=True,                 # Imag   e is optional
-        blank=True                 # Also optional in forms
-    )
-    '''
 
     def __str__(self):
         return self.titulo
@@ -54,7 +46,7 @@ class Edicao(models.Model):
 
     class Meta:
         verbose_name = "Edição"
-        verbose_name_plural = "Edições" # 👈 This fixes "Edicaos"!
+        verbose_name_plural = "Edições" # This fixes "Edicaos"!
 
     def __str__(self):
         return f"{self.livro.titulo} - Edição {self.numero_edicao} ({self.data_lancamento.year})"
@@ -64,13 +56,14 @@ from django.core.exceptions import ValidationError # ⚠️ Import this at the t
 class Membro(models.Model):
     TIPOS_DE_MEMBRO = [
         ('ALUNO', 'Aluno'),
-        ('PROFESSOR', 'Professor'), # Updated to match your PDF spec
+        ('PROFESSOR', 'Professor'),
         ('ADMIN', 'Administrador'),
     ]
-    usuario = models.OneToOneField(AuthUser, on_delete=models.CASCADE, related_name='member')
+    nome_completo = models.CharField(max_length=255, null=True, blank=True)
+    email = models.EmailField(max_length=255, null=True, blank=True)
+    telefone = models.CharField(max_length=30, null=True, blank=True)
     tipo_membro = models.CharField(max_length=20, choices=TIPOS_DE_MEMBRO)
-    
-    # Optional in DB layer because they depend on the member type
+
     ra = models.CharField(max_length=50, unique=True, null=True, blank=True)
     siape = models.CharField(max_length=50, unique=True, null=True, blank=True)
 
@@ -80,16 +73,26 @@ class Membro(models.Model):
         """
         super().clean()
         
-        # Rule 1: If student, RA is mandatory
-        if self.tipo_membro == 'ALUNO' and not self.ra:
-            raise ValidationError({'ra': 'O campo RA é obrigatório para alunos.'})
+        # --- STUDENT RULES ---
+        if self.tipo_membro == 'ALUNO':
+            # Rule 1: RA is mandatory for students
+            if not self.ra:
+                raise ValidationError({'ra': 'O campo RA é obrigatório para alunos.'})
+            # Rule 2: Students CANNOT have a SIAPE[cite: 1]
+            if self.siape:
+                raise ValidationError({'siape': 'Alunos não podem possuir um número SIAPE.'})
         
-        # Rule 2: If professor, SIAPE is mandatory
-        if self.tipo_membro == 'PROFESSOR' and not self.siape:
-            raise ValidationError({'siape': 'O campo SIAPE é obrigatório para professores.'})
+        # --- PROFESSOR RULES ---
+        if self.tipo_membro == 'PROFESSOR':
+            # Rule 3: SIAPE is mandatory for professors[cite: 1]
+            if not self.siape:
+                raise ValidationError({'siape': 'O campo SIAPE é obrigatório para professores.'})
+            # Rule 4: Professors CANNOT have an RA[cite: 1]
+            if self.ra:
+                raise ValidationError({'ra': 'Professores não podem possuir um número RA.'})
 
     def __str__(self):
-        return f"{self.usuario.username} ({self.get_tipo_membro_display()})"
+        return f"{self.nome_completo} ({self.get_tipo_membro_display()})"
 
 class Emprestimo(models.Model):
     STATUS_EMPRESTIMO = [
@@ -115,11 +118,36 @@ class Emprestimo(models.Model):
 
     __original_status = None
 
+    def clean(self): # previne que um livro nao seja emprestado se nao estiver disponivel
+        super().clean()
+        
+        # We only check availability if this is a NEW loan transaction (self.pk is None)
+        if self.pk is None and self.livro and not self.livro.disponivel:
+            raise ValidationError({
+                'livro': f"O livro '{self.livro.titulo}' não está disponível para empréstimo no momento."
+            })
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__original_status = self.status
 
     def save(self, *args, **kwargs):
+        """
+        Rule 2: Automatically calculate the due date before saving.
+        """
+        # Se o admin nao selecionar uma data de devolucao, a gente calcula automaticamente com base no tipo do membro
+        if not self.data_prevista_devolucao and self.membro:
+            # data_emprestimo é um DateTimeField, então convertemos o campo de data
+            base_date = self.data_emprestimo.date() if self.data_emprestimo else timezone.now().date()
+            
+            if self.membro.tipo_membro == 'ALUNO':
+                self.data_prevista_devolucao = base_date + timedelta(days=14)
+            elif self.membro.tipo_membro == 'PROFESSOR':
+                self.data_prevista_devolucao = base_date + timedelta(days=28)
+            else:
+                self.data_prevista_devolucao = base_date + timedelta(days=7) # Default for Admin
+
+
         super().save(*args, **kwargs)
         if self.status != self.__original_status:
             if self.status == 'EMITIDO':
@@ -131,5 +159,9 @@ class Emprestimo(models.Model):
                     self.livro.save(update_fields=['disponivel'])
         self.__original_status = self.status
 
+    class Meta:
+        verbose_name = "Empréstimo"
+        verbose_name_plural = "Empréstimos"
+
     def __str__(self):
-        return f"{self.livro.titulo} emprestado para {self.membro.usuario.username} ({self.status})"
+        return f"{self.livro.titulo} emprestado para {self.membro.nome_completo} ({self.status})"
