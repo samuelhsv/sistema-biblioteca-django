@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'myapp',
+    'biblioteca.apps.BibliotecaConfig',
 ]
 
 MEDIA_URL = '/media/'

@@ -2,6 +2,15 @@ from django.contrib import admin
 from .models import Categoria, Autor, Livro, Membro, Emprestimo
 from django.utils.html import mark_safe
 
+# altera o título da aba do navegador (Title)
+admin.site.site_title = "Biblioteca FLUI"
+
+# altera o título do cabeçalho principal na página de login e no topo do painel (Header)
+admin.site.site_header = "Biblioteca Comunitária FLUI"
+
+# altera o texto de boas-vindas na página inicial do painel
+admin.site.index_title = "Painel de Controle e Gestão"
+
 @admin.register(Membro)
 class MembroAdmin(admin.ModelAdmin):
     list_display = ('nome_completo', 'tipo_membro', 'ra', 'siape', 'email')
@@ -21,10 +30,8 @@ class EmprestimoAdmin(admin.ModelAdmin):
 
 @admin.register(Livro)
 class LivroAdmin(admin.ModelAdmin):
-    # 1. This controls the order of the EDIT form
     fields = ('capa', 'image_preview', 'titulo', 'autores', 'categoria', 'qtd_total', 'qtd_disponivel', 'disponivel')
     
-    # 2. This keeps the preview read-only so you don't try to edit the URL path directly
     readonly_fields = ('image_preview',) 
 
     list_display = ('titulo', 'image_preview', 'categoria', 'disponivel')
@@ -38,6 +45,6 @@ class LivroAdmin(admin.ModelAdmin):
     list_filter = ('disponivel', 'categoria')
     search_fields = ('titulo', 'autores__primeiro_nome', 'autores__sobrenome')
 
-# Standard registrations for simpler tables
+# registros padrão para tabelas mais simples
 admin.site.register(Categoria)
 admin.site.register(Autor)

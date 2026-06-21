@@ -89,7 +89,11 @@ class Emprestimo(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__original_status = self.status
+        # Se o ID (pk) é None, o livro está sendo criado agora
+        if self.pk is None:
+            self.__original_status = None
+        else:
+            self.__original_status = self.status
 
     def save(self, *args, **kwargs):
         if not self.data_prevista_devolucao and self.membro:
@@ -102,22 +106,24 @@ class Emprestimo(models.Model):
             else:
                 self.data_prevista_devolucao = base_date + timedelta(days=7)
 
-
+        # salva o empréstimo primeiro para garantir a consistência
         super().save(*args, **kwargs)
+        
         if self.status != self.__original_status:
             if self.status == 'EMPRESTADO':
                 self.livro.qtd_disponivel -= 1
-                
                 if self.livro.qtd_disponivel <= 0: 
+                    self.livro.disponivel = False              
                     self.livro.save(update_fields=['qtd_disponivel', 'disponivel'])
                 else:
                     self.livro.save(update_fields=['qtd_disponivel'])                   
+            
             elif self.status == 'DEVOLVIDO' and self.__original_status == 'EMPRESTADO': 
-                if not Emprestimo.objects.filter(Livro=self.livro, status='EMPRESTADO').exists(): 
-                    self.livro.disponivel = True
-                    self.livro.qtd_disponivel = min(self.livro.qtd_total, self.livro.qtd_disponivel + 1)
-
-                    self.livro.save(update_fields=['qtd_disponivel', 'disponivel'])
+                self.livro.disponivel = True
+                self.livro.qtd_disponivel = min(self.livro.qtd_total, self.livro.qtd_disponivel + 1)
+                self.livro.save(update_fields=['qtd_disponivel', 'disponivel'])
+                
+        # atualiza o estado original na memória para evitar execuções duplicadas caso salve de novo
         self.__original_status = self.status
 
     class Meta:
