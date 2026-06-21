@@ -1,9 +1,8 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User as AuthUser # Django's built-in User model
-from datetime import timedelta # ⚠️ ADD THIS IMPORT AT THE TOP OF YOUR FILE
+from django.utils.safestring import mark_safe
+from datetime import timedelta
 from django.core.exceptions import ValidationError
-
 
 class Categoria(models.Model):
     nome = models.CharField(max_length=100, unique=True)
@@ -16,43 +15,23 @@ class Autor(models.Model):
 
     class Meta:
         verbose_name = "Autor"
-        verbose_name_plural = "Autores" # This fixes "Autor
+        verbose_name_plural = "Autores"
 
     def __str__(self):
         return f"{self.primeiro_nome} {self.sobrenome}"
-
-class Editora(models.Model):
-    primeiro_nome = models.CharField(max_length=50)
-    sobrenome = models.CharField(max_length=50)
-    def __str__(self):
-        return f"{self.primeiro_nome} {self.sobrenome}"
-
+    
 class Livro(models.Model):
     titulo = models.CharField(max_length=200)
-    descricao = models.TextField()
+    capa = models.ImageField(upload_to="media/images", null=True, blank=True)
     autores = models.ManyToManyField(Autor, related_name='Livros')
-    editora = models.ForeignKey(Editora, on_delete=models.CASCADE, related_name='Livro')
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, related_name='Livros')
+    qtd_total = models.PositiveIntegerField(default=1, verbose_name="quantidade total")
+    qtd_disponivel = models.PositiveIntegerField(default=1, verbose_name="quantidade disponível")
     disponivel = models.BooleanField(default=True)
 
     def __str__(self):
         return self.titulo
-
-class Edicao(models.Model):
-    livro = models.OneToOneField(Livro, on_delete=models.CASCADE, related_name='edition')
-    numero_edicao = models.PositiveIntegerField()
-    data_lancamento = models.DateField()
-    paginas = models.PositiveIntegerField()
-
-    class Meta:
-        verbose_name = "Edição"
-        verbose_name_plural = "Edições" # This fixes "Edicaos"!
-
-    def __str__(self):
-        return f"{self.livro.titulo} - Edição {self.numero_edicao} ({self.data_lancamento.year})"
-
-from django.core.exceptions import ValidationError # ⚠️ Import this at the top!
-
+        
 class Membro(models.Model):
     TIPOS_DE_MEMBRO = [
         ('ALUNO', 'Aluno'),
@@ -68,26 +47,17 @@ class Membro(models.Model):
     siape = models.CharField(max_length=50, unique=True, null=True, blank=True)
 
     def clean(self):
-        """
-        Runs custom validation rules from the PDF specification.
-        """
         super().clean()
         
-        # --- STUDENT RULES ---
         if self.tipo_membro == 'ALUNO':
-            # Rule 1: RA is mandatory for students
             if not self.ra:
                 raise ValidationError({'ra': 'O campo RA é obrigatório para alunos.'})
-            # Rule 2: Students CANNOT have a SIAPE[cite: 1]
             if self.siape:
                 raise ValidationError({'siape': 'Alunos não podem possuir um número SIAPE.'})
         
-        # --- PROFESSOR RULES ---
         if self.tipo_membro == 'PROFESSOR':
-            # Rule 3: SIAPE is mandatory for professors[cite: 1]
             if not self.siape:
                 raise ValidationError({'siape': 'O campo SIAPE é obrigatório para professores.'})
-            # Rule 4: Professors CANNOT have an RA[cite: 1]
             if self.ra:
                 raise ValidationError({'ra': 'Professores não podem possuir um número RA.'})
 
@@ -96,32 +66,22 @@ class Membro(models.Model):
 
 class Emprestimo(models.Model):
     STATUS_EMPRESTIMO = [
-        #('SOLICITADO', 'Solicitado'),
-        ('EMITIDO', 'Emitido'),
+        ('EMPRESTADO', 'Emprestado'),
         ('DEVOLVIDO', 'Devolvido'),
         ('ATRASADO', 'Atrasado'),
-        ('CANCELADO', 'Cancelado'),
     ]
     membro = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name='livros_emprestados')
     livro = models.ForeignKey(Livro, on_delete=models.CASCADE, related_name='livros_emprestados')
-    edicao = models.ForeignKey(
-        Edicao,
-        on_delete=models.SET_NULL,
-        related_name='livros_emprestados',
-        null=True,
-        blank=True
-    )
     data_emprestimo = models.DateTimeField(default=timezone.now)
     data_prevista_devolucao = models.DateField(null=True, blank=True)
     data_devolucao = models.DateField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_EMPRESTIMO, default='EMITIDO')
+    status = models.CharField(max_length=20, choices=STATUS_EMPRESTIMO, default='EMPRESTADO')
 
     __original_status = None
 
-    def clean(self): # previne que um livro nao seja emprestado se nao estiver disponivel
+    def clean(self):
         super().clean()
         
-        # We only check availability if this is a NEW loan transaction (self.pk is None)
         if self.pk is None and self.livro and not self.livro.disponivel:
             raise ValidationError({
                 'livro': f"O livro '{self.livro.titulo}' não está disponível para empréstimo no momento."
@@ -132,12 +92,7 @@ class Emprestimo(models.Model):
         self.__original_status = self.status
 
     def save(self, *args, **kwargs):
-        """
-        Rule 2: Automatically calculate the due date before saving.
-        """
-        # Se o admin nao selecionar uma data de devolucao, a gente calcula automaticamente com base no tipo do membro
         if not self.data_prevista_devolucao and self.membro:
-            # data_emprestimo é um DateTimeField, então convertemos o campo de data
             base_date = self.data_emprestimo.date() if self.data_emprestimo else timezone.now().date()
             
             if self.membro.tipo_membro == 'ALUNO':
@@ -145,18 +100,24 @@ class Emprestimo(models.Model):
             elif self.membro.tipo_membro == 'PROFESSOR':
                 self.data_prevista_devolucao = base_date + timedelta(days=28)
             else:
-                self.data_prevista_devolucao = base_date + timedelta(days=7) # Default for Admin
+                self.data_prevista_devolucao = base_date + timedelta(days=7)
 
 
         super().save(*args, **kwargs)
         if self.status != self.__original_status:
-            if self.status == 'EMITIDO':
-                self.livro.disponivel = False
-                self.livro.save(update_fields=['disponivel'])
-            elif self.status in ['DEVOLVIDO', 'CANCELADO'] and self.__original_status == 'EMITIDO':
-                if not Emprestimo.objects.filter(Livro=self.livro, status='EMITIDO').exists():
+            if self.status == 'EMPRESTADO':
+                self.livro.qtd_disponivel -= 1
+                
+                if self.livro.qtd_disponivel <= 0: 
+                    self.livro.save(update_fields=['qtd_disponivel', 'disponivel'])
+                else:
+                    self.livro.save(update_fields=['qtd_disponivel'])                   
+            elif self.status == 'DEVOLVIDO' and self.__original_status == 'EMPRESTADO': 
+                if not Emprestimo.objects.filter(Livro=self.livro, status='EMPRESTADO').exists(): 
                     self.livro.disponivel = True
-                    self.livro.save(update_fields=['disponivel'])
+                    self.livro.qtd_disponivel = min(self.livro.qtd_total, self.livro.qtd_disponivel + 1)
+
+                    self.livro.save(update_fields=['qtd_disponivel', 'disponivel'])
         self.__original_status = self.status
 
     class Meta:

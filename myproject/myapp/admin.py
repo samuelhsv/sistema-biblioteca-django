@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Categoria, Autor, Editora, Livro, Edicao, Membro, Emprestimo
+from .models import Categoria, Autor, Livro, Membro, Emprestimo
+from django.utils.html import mark_safe
 
 @admin.register(Membro)
 class MembroAdmin(admin.ModelAdmin):
@@ -7,7 +8,6 @@ class MembroAdmin(admin.ModelAdmin):
     list_filter = ('tipo_membro',)
     search_fields = ('nome_completo', 'ra', 'siape')
     
-    # Groups the fields nicely on the screen for the admin
     fieldsets = [
         ('Informações Pessoais', {'fields': ['nome_completo', 'tipo_membro', 'email', 'telefone']}),
         ('Identificadores Acadêmicos', {'fields': ['ra', 'siape']}),
@@ -21,17 +21,23 @@ class EmprestimoAdmin(admin.ModelAdmin):
 
 @admin.register(Livro)
 class LivroAdmin(admin.ModelAdmin):
-    # What columns show up on the main books table
-    list_display = ('titulo', 'categoria', 'editora', 'disponivel')
+    # 1. This controls the order of the EDIT form
+    fields = ('capa', 'image_preview', 'titulo', 'autores', 'categoria', 'qtd_total', 'qtd_disponivel', 'disponivel')
     
-    # Sidebar filters to quickly isolate loaned or available stock[cite: 1]
-    list_filter = ('disponivel', 'categoria', 'editora')
+    # 2. This keeps the preview read-only so you don't try to edit the URL path directly
+    readonly_fields = ('image_preview',) 
+
+    list_display = ('titulo', 'image_preview', 'categoria', 'disponivel')
+
+    def image_preview(self, obj):
+        if obj.capa:
+            return mark_safe(f'<img src="{obj.capa.url}" style="width: 90px; height: auto;" />')
+        return "Sem imagem"
     
-    # Search engine: Looks up by book title OR author's first/last name!
+    image_preview.short_description = 'Capa'
+    list_filter = ('disponivel', 'categoria')
     search_fields = ('titulo', 'autores__primeiro_nome', 'autores__sobrenome')
 
 # Standard registrations for simpler tables
 admin.site.register(Categoria)
 admin.site.register(Autor)
-admin.site.register(Editora)
-admin.site.register(Edicao)
