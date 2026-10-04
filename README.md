@@ -302,12 +302,12 @@ O resultado da revisão de segurança final ficará em `docs/SEGURANCA.md`.
 
 Projeto estudantil desenvolvido por:
 
-| Pessoa | Frente |
+| Nome | Frente |
 |---|---|
-| **Samuel** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
-| **Lilian** | Cadastro, painel administrativo, auditoria e modelo de reservas |
-| **Geovana** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
-| **Bruna** | Portal (conta do usuário), motor de restrições e revisão de segurança |
+| Samuel | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
+|  | Cadastro, painel administrativo, auditoria e modelo de reservas |
+|  | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
+|  | Portal (conta do usuário), motor de restrições e revisão de segurança |
 
 ---
 
