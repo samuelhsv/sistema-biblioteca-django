@@ -304,7 +304,7 @@ Projeto estudantil desenvolvido por:
 
 | Nome | Frente |
 |---|---|
-|  | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
+| Samuel | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
 |  | Cadastro, painel administrativo, auditoria e modelo de reservas |
 |  | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
 |  | Portal (conta do usuário), motor de restrições e revisão de segurança |
