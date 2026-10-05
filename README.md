@@ -157,43 +157,65 @@ Sempre que um exemplar é liberado (devolução, cancelamento, recusa ou expira�
 ---
 
 ## 💻 Como rodar localmente
+## Rodando o projeto na sua máquina
 
-**Pré-requisitos:** Python (mesma versão do servidor), Git e, de preferência, VS Code com a extensão Python.
+### 1. Clonar e criar o ambiente virtual
 
 ```bash
-# 1. Clone o repositório
-git clone <URL-DO-REPOSITORIO>
-cd <pasta-do-projeto>
+git clone <URL do repositório>
+cd sistema-biblioteca-django
 
-# 2. Crie e ative o ambiente virtual
 python -m venv .venv
-# Windows:      .venv\Scripts\activate
-# Linux ou Mac: source .venv/bin/activate
+# Linux ou Mac:  source .venv/bin/activate
+# Windows:       .venv\Scripts\activate
 
-# 3. Instale as dependências
 pip install -r requirements.txt
+```
 
-# 4. Configure as variáveis de ambiente (veja a seção abaixo)
-cp .env.example .env      # depois edite o .env
+### 2. Configurar o arquivo `.env`
 
-# 5. Crie o banco, o superusuário e rode o servidor
+O projeto lê suas configurações sensíveis (chave secreta, modo debug) de um
+arquivo `.env`, que **não vai para o Git**. Cada pessoa cria o seu:
+
+```bash
+cd myproject
+cp .env.example .env        # Windows: copy .env.example .env
+```
+
+Abra o `.env` e preencha:
+
+| Variável | Para que serve | Valor local |
+|---|---|---|
+| `SECRET_KEY` | Chave usada pelo Django para assinar sessões, tokens e cookies | Gere uma (comando abaixo) |
+| `DEBUG` | Liga o modo de desenvolvimento (páginas de erro detalhadas) | `True` |
+| `ALLOWED_HOSTS` | Endereços que o servidor aceita, separados por vírgula, **sem espaços** | `127.0.0.1,localhost` |
+
+Para gerar uma `SECRET_KEY` nova:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+Cole o resultado entre aspas simples: `SECRET_KEY='...'`.
+
+> ⚠️ Nunca faça commit do `.env`, nunca compartilhe sua chave e nunca use
+> `DEBUG=True` em produção. Cada ambiente (seu computador, homologação,
+> produção) usa uma `SECRET_KEY` diferente.
+
+### 3. Preparar o banco e rodar
+
+```bash
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Acesse:
+Acesse `http://127.0.0.1:8000/admin`.
 
-- Portal: <http://127.0.0.1:8000/>
-- Administração: <http://127.0.0.1:8000/admin/>
+### Problemas comuns
 
-**Primeiro teste:** no admin, cadastre 1 categoria, 2 livros, 1 aluno, 1 professor e 1 empréstimo. Observe o `qtd_disponivel` diminuir ao emprestar e voltar ao marcar como devolvido.
-
-**Problemas comuns**
-
+- `KeyError: 'SECRET_KEY'`: o `.env` não existe ou não está na mesma pasta do `manage.py`.
 - `No module named django`: o ambiente virtual não está ativado.
-- No Windows, se `python` não funcionar, tente `py`.
-- Nunca faça commit de `.venv/`, `.env` ou `db.sqlite3`. Rode `git status` antes de todo `git add`.
 
 ---
 
@@ -302,12 +324,12 @@ O resultado da revisão de segurança final ficará em `docs/SEGURANCA.md`.
 
 Projeto estudantil desenvolvido por:
 
-| Pessoa | Frente |
+| Nome | Frente |
 |---|---|
-| **Samuel** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
-| **Lilian** | Cadastro, painel administrativo, auditoria e modelo de reservas |
-| **Geovana** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
-| **Bruna** | Portal (conta do usuário), motor de restrições e revisão de segurança |
+| Samuel | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
+|  | Cadastro, painel administrativo, auditoria e modelo de reservas |
+|  | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
+|  | Portal (conta do usuário), motor de restrições e revisão de segurança |
 
 ---
 
