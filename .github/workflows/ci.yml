@@ -1,0 +1,27 @@
+name: CI
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: chave-apenas-para-testes
+      DEBUG: "True"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"   # use a mesma versão do PythonAnywhere, SEMPRE entre aspas
+      - run: pip install -r requirements.txt
+      - name: Verificar configuração
+        working-directory: myproject
+        run: python manage.py check
+      - name: Verificar migrações esquecidas
+        working-directory: myproject
+        run: python manage.py makemigrations --check --dry-run
+      - name: Rodar testes
+        working-directory: myproject
+        run: python manage.py test
