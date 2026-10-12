@@ -4,11 +4,6 @@ from django.utils.safestring import mark_safe
 from datetime import timedelta
 from django.core.exceptions import ValidationError
 
-class Categoria(models.Model):
-    nome = models.CharField(max_length=100, unique=True)
-    def __str__(self):
-        return self.nome
-
 class Autor(models.Model):
     primeiro_nome = models.CharField(max_length=50)
     sobrenome = models.CharField(max_length=50)
