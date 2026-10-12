@@ -17,9 +17,11 @@ jobs:
           python-version: "3.12"   # use a mesma versão do PythonAnywhere, SEMPRE entre aspas
       - run: pip install -r requirements.txt
       - name: Verificar configuração
-        working-directory: myproject 
+        working-directory: myproject
         run: python manage.py check
       - name: Verificar migrações esquecidas
+        working-directory: myproject
         run: python manage.py makemigrations --check --dry-run
       - name: Rodar testes
+        working-directory: myproject
         run: python manage.py test
