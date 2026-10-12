@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 
 class Categoria(models.Model):
     nome = models.CharField(max_length=100, unique=True)
+    observacao = models.CharField(max_length=100, blank=True)
     def __str__(self):
         return self.nome
 
