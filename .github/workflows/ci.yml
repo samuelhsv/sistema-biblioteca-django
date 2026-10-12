@@ -8,7 +8,7 @@ jobs:
   testes:
     runs-on: ubuntu-latest
     env:
-      SECRET_KEY: n+2(pd4=ox5_5+2szp#fh)3comgt6jr12!2pofk$61u7cy+)6q
+      SECRET_KEY: chave-apenas-para-testes
       DEBUG: "True"
     steps:
       - uses: actions/checkout@v4
