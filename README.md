@@ -305,7 +305,7 @@ Projeto estudantil desenvolvido por:
 | Pessoa | Frente |
 |---|---|
 | **Samuel** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
-| **Lilian** | Cadastro, painel administrativo, auditoria e modelo de reservas |
+| **[Lilian Morais Brum](https://github.com/Lilianbrum)** | Cadastro, painel administrativo, auditoria e modelo de reservas |
 | **Geovana** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
 | **Bruna** | Portal (conta do usuário), motor de restrições e revisão de segurança |
 
