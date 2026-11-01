@@ -1,6 +1,6 @@
 # 📚 Biblioteca Comunitária FLUI
 
-[![CI](https://github.com/samuelhsv/sistema-biblioteca-django/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/OWNER/sistema-biblioteca-django/actions/workflows/ci.yml)
+[![CI](https://github.com/samuelhsv/sistema-biblioteca-django/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/samuelhsv/sistema-biblioteca-django/actions/workflows/ci.yml)
 
 Sistema web de gestão de acervo, empréstimos e reservas para a Biblioteca Comunitária FLUI. Projeto estudantil desenvolvido em **Django** (arquitetura **MVT**), com deploy no **PythonAnywhere**.
 
