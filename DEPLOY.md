@@ -11,6 +11,34 @@
 - Projeto em `~/sistema-biblioteca-django`, venv em `~/.virtualenvs/.venv`
 - `.env` já existe no servidor, em `myproject/.env`
 
+### Como abrir o terminal do PythonAnywhere
+
+1. Entre em pythonanywhere.com com a conta do ambiente (homologação: `fluihomolog`).
+2. No menu superior, clique em **Consoles**.
+3. Em "Start a new console", clique em **Bash**. (Se já houver um console
+   aberto na lista "Your consoles", pode reutilizá-lo.)
+4. Aparece uma tela preta com um prompt parecido com `12:34 ~ $`.
+   Os comandos digitados ali rodam no servidor, não no seu computador.
+
+**Antes de rodar qualquer coisa, confira onde você está:**
+
+- `pwd` mostra a pasta atual. Os comandos `python manage.py ...` só funcionam
+  dentro de `myproject/`.
+- Depois do `source .../activate`, o prompt ganha um prefixo como `(.venv)`.
+  Se não aparecer, o venv não está ativo.
+- `git branch` mostra a branch atual com um `*`: deve ser `develop` na
+  homologação e `main` na produção.
+
+**Como executar os comandos das seções 3 e 4:**
+
+- Copie e cole **um bloco de cada vez** e leia a saída antes de seguir.
+- Se algum comando mostrar erro, **pare** e vá para a seção 6. O terminal não
+  para sozinho: ao colar várias linhas, as seguintes continuam rodando mesmo
+  que uma tenha falhado.
+- Na produção, rode linha por linha pelo menos até o `migrate`. Se o `cp` do
+  backup falhar e você seguir para o `migrate`, perdeu a rede de segurança.
+- O último passo (Reload) **não** é no terminal: é na aba **Web**.
+
 ## 3. Atualizar a homologação
 ```bash
 cd ~/sistema-biblioteca-django
