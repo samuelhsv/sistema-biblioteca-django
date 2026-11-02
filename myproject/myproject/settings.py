@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'biblioteca.apps.BibliotecaConfig',
+    'reservas.apps.ReservasConfig',
 ]
 
 MEDIA_URL = '/media/'
