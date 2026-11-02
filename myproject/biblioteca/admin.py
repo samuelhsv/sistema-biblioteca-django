@@ -3,6 +3,7 @@ from django.utils.html import mark_safe
 
 from .models import Autor, Categoria, Curso, Emprestimo, Livro, Membro
 
+from simple_history.admin import SimpleHistoryAdmin
 
 admin.site.site_title = "Biblioteca FLUI"
 admin.site.site_header = "Biblioteca Comunitária FLUI"
@@ -10,14 +11,14 @@ admin.site.index_title = "Painel de Controle e Gestão"
 
 
 @admin.register(Curso)
-class CursoAdmin(admin.ModelAdmin):
+class CursoAdmin(SimpleHistoryAdmin):
     list_display = ("nome",)
     search_fields = ("nome",)
     ordering = ("nome",)
 
 
 @admin.register(Membro)
-class MembroAdmin(admin.ModelAdmin):
+class MembroAdmin(SimpleHistoryAdmin):
     list_display = (
         "nome_completo",
         "tipo_membro",
@@ -63,7 +64,7 @@ class MembroAdmin(admin.ModelAdmin):
 
 
 @admin.register(Emprestimo)
-class EmprestimoAdmin(admin.ModelAdmin):
+class EmprestimoAdmin(SimpleHistoryAdmin):
     list_display = (
         "livro",
         "membro",
@@ -80,7 +81,7 @@ class EmprestimoAdmin(admin.ModelAdmin):
 
 
 @admin.register(Livro)
-class LivroAdmin(admin.ModelAdmin):
+class LivroAdmin(SimpleHistoryAdmin):
     fields = (
         "capa",
         "image_preview",
@@ -115,5 +116,9 @@ class LivroAdmin(admin.ModelAdmin):
         return "Sem imagem"
 
 
-admin.site.register(Categoria)
+@admin.register(Categoria)
+class CategoriaAdmin(SimpleHistoryAdmin):
+    list_display = ("nome",)
+    search_fields = ("nome",)
+
 admin.site.register(Autor)

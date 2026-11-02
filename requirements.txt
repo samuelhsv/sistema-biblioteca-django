@@ -3,3 +3,4 @@ Django==6.0.6
 django-appconf==1.2.0
 pillow==12.2.0
 sqlparse==0.5.5
+django-simple-history==3.13.0
