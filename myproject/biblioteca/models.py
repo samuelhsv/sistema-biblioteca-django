@@ -88,7 +88,9 @@ class Membro(models.Model):
     )
 
     email = models.EmailField(
+        "e-mail",
         max_length=255,
+        unique=True,
         null=True,
         blank=True,
     )
@@ -137,9 +139,36 @@ class Membro(models.Model):
         verbose_name="período",
     )
 
+    def _normalizar_dados(self):
+        """
+        Remove espaços nas extremidades e padroniza o e-mail.
+
+        E-mail vazio vira None, permitindo vários membros sem e-mail
+        nos perfis em que o preenchimento não é obrigatório.
+        """
+        self.email = (self.email or "").strip().lower() or None
+
+        # Remove espaços extras sem alterar maiúsculas e minúsculas.
+        self.nome_completo = (
+            " ".join((self.nome_completo or "").split()) or None
+        )
+
+    def clean_fields(self, exclude=None):
+        """
+        Normaliza antes da validação individual dos campos.
+
+        Isso evita rejeitar um e-mail válido apenas porque foi
+        informado com espaços nas extremidades.
+        """
+        self._normalizar_dados()
+        super().clean_fields(exclude=exclude)
+
     def clean(self):
-        """Valida as regras específicas de cada perfil."""
+        """Valida as regras dos perfis e a duplicidade de e-mail."""
         super().clean()
+
+        # Também normaliza caso clean() seja chamado diretamente.
+        self._normalizar_dados()
         erros = {}
 
         if self.tipo_membro == "ALUNO":
@@ -175,18 +204,37 @@ class Membro(models.Model):
                         "Professores não podem possuir um número RA."
                     )
 
+                if not self.email:
+                    erros["email"] = (
+                        "Professores precisam informar o e-mail."
+                    )
+
+                if len((self.nome_completo or "").split()) < 2:
+                    erros["nome_completo"] = (
+                        "Informe o nome completo do professor "
+                        "com pelo menos duas palavras."
+                    )
+
+        if self.email:
+            duplicados = (
+                type(self)
+                .objects.filter(email__iexact=self.email)
+                .exclude(pk=self.pk)
+            )
+
+            if duplicados.exists():
+                erros["email"] = (
+                    "Este e-mail já está cadastrado para outro membro."
+                )
+
         if erros:
             raise ValidationError(erros)
 
     def save(self, *args, **kwargs):
         """
-        Valida o membro antes de gravar.
+        Valida antes de salvar, inclusive em objects.create().
 
-        full_clean() verifica os campos, executa clean() e verifica
-        a unicidade e as restrições aplicáveis.
-
-        Este método também é chamado por objects.create().
-        Operações em lote, como update() e bulk_create(), não o executam.
+        update() e bulk_create() não executam este método.
         """
         self.full_clean()
         return super().save(*args, **kwargs)
