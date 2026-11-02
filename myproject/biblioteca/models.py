@@ -71,7 +71,6 @@ class Livro(models.Model):
         Reservas aguardando retirada seguram exemplares, mas não
         alteram a quantidade física registrada em qtd_disponivel.
         """
-        # Import local evita importação circular entre os apps.
         from reservas.models import Reserva
 
         aguardando_retirada = self.reservas.filter(
@@ -170,25 +169,19 @@ class Membro(models.Model):
 
     def _normalizar_dados(self):
         """
-        Remove espaços nas extremidades e padroniza o e-mail.
+        Remove espaços extras e padroniza o e-mail.
 
         E-mail vazio vira None, permitindo vários membros sem e-mail
         nos perfis em que o preenchimento não é obrigatório.
         """
         self.email = (self.email or "").strip().lower() or None
 
-        # Remove espaços extras sem alterar maiúsculas e minúsculas.
         self.nome_completo = (
             " ".join((self.nome_completo or "").split()) or None
         )
 
     def clean_fields(self, exclude=None):
-        """
-        Normaliza antes da validação individual dos campos.
-
-        Isso evita rejeitar um e-mail válido apenas porque foi
-        informado com espaços nas extremidades.
-        """
+        """Normaliza os dados antes da validação dos campos."""
         self._normalizar_dados()
         super().clean_fields(exclude=exclude)
 
@@ -196,7 +189,6 @@ class Membro(models.Model):
         """Valida as regras dos perfis e a duplicidade de e-mail."""
         super().clean()
 
-        # Também normaliza caso clean() seja chamado diretamente.
         self._normalizar_dados()
         erros = {}
 
@@ -317,17 +309,49 @@ class Emprestimo(models.Model):
     __original_status = None
 
     def clean(self):
+        """Valida estoque, reservas e pendências de novos empréstimos."""
         super().clean()
 
-        if self.pk is None and self.livro and not self.livro.disponivel:
-            raise ValidationError(
-                {
-                    "livro": (
-                        f"O livro '{self.livro.titulo}' não está "
-                        "disponível para empréstimo no momento."
-                    )
-                }
+        # As regras de abertura não devem impedir uma devolução.
+        if not self._state.adding:
+            return
+
+        erros = {}
+
+        if self.livro_id:
+            livro = self.livro
+
+            if not livro.disponivel or livro.qtd_disponivel <= 0:
+                erros["livro"] = (
+                    "O livro não está disponível para empréstimo."
+                )
+            elif livro.qtd_livre_para_reserva <= 0:
+                erros["livro"] = (
+                    "Todos os exemplares disponíveis estão "
+                    "reservados para a fila."
+                )
+
+        if self.membro_id:
+            # Bloqueia empréstimos marcados como atrasados
+            # ou ainda emprestados com prazo anterior a hoje.
+            pendencias = type(self).objects.filter(
+                membro_id=self.membro_id,
+            ).filter(
+                models.Q(status="ATRASADO")
+                | models.Q(
+                    status="EMPRESTADO",
+                    data_prevista_devolucao__lt=timezone.localdate(),
+                )
             )
+
+            if pendencias.exists():
+                erros["membro"] = (
+                    "O membro possui devolução pendente e não "
+                    "pode realizar um novo empréstimo."
+                )
+
+        if erros:
+            raise ValidationError(erros)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
