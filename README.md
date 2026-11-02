@@ -1,5 +1,7 @@
 # 📚 Biblioteca Comunitária FLUI
 
+[![CI](https://github.com/samuelhsv/sistema-biblioteca-django/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/samuelhsv/sistema-biblioteca-django/actions/workflows/ci.yml)
+
 Sistema web de gestão de acervo, empréstimos e reservas para a Biblioteca Comunitária FLUI. Projeto estudantil desenvolvido em **Django** (arquitetura **MVT**), com deploy no **PythonAnywhere**.
 
 > 🚧 **Projeto em desenvolvimento.** O núcleo administrativo (acervo, membros e empréstimos) já está em produção. Portal público, fila de espera, restrições e auditoria estão sendo construídos em sprints até **17/12/2026**. A seção [Status do projeto](#-status-do-projeto) mostra o que já existe e o que está planejado.
@@ -326,10 +328,10 @@ Projeto estudantil desenvolvido por:
 
 | Nome | Frente |
 |---|---|
-| Samuel | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
-|  | Cadastro, painel administrativo, auditoria e modelo de reservas |
-|  | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
-|  | Portal (conta do usuário), motor de restrições e revisão de segurança |
+| **Samuel** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
+| **[Lilian Morais Brum](https://github.com/Lilianbrum)** | Cadastro, painel administrativo, auditoria e modelo de reservas |
+| **Geovana** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
+| **Bruna** | Portal (conta do usuário), motor de restrições e revisão de segurança |
 
 ---
 
