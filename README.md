@@ -316,3 +316,33 @@ Projeto estudantil desenvolvido por:
 ## 📄 Licença
 
 *(A definir pela equipe e pelo professor.)*
+
+## Auditoria de alterações
+
+Livro, Membro, Empréstimo, Reserva, Categoria e Curso possuem histórico
+de criação, alteração e exclusão, disponível no botão Histórico do admin.
+
+Cada registro histórico guarda uma cópia dos dados e a data da operação.
+Alterações feitas no admin identificam o usuário autenticado. Operações
+fora de uma requisição precisam informar explicitamente o responsável
+por meio de `_history_user`; caso contrário, o usuário fica vazio.
+
+O acesso ao histórico segue as permissões dos respectivos modelos no
+admin. Contas administrativas devem ser concedidas somente às pessoas
+autorizadas pela biblioteca.
+
+O histórico inclui cópias de dados pessoais, como nome, e-mail, telefone,
+RA e SIAPE. Atualmente não há exclusão automática desses registros.
+O prazo de retenção e o procedimento de descarte ainda precisam ser
+definidos pela biblioteca antes do uso em produção.
+
+Após aplicar as migrações, o histórico inicial dos registros existentes
+pode ser criado com:
+
+    python manage.py populate_history --auto
+
+Esse comando registra o estado atual e não recupera alterações anteriores.
+
+Operações com QuerySet.update(), bulk_create() e SQL direto não geram
+histórico automaticamente. Alterações na relação de autores de um livro
+também não são acompanhadas nesta implementação.
