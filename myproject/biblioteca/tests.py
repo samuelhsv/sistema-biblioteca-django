@@ -11,7 +11,7 @@ class MembroAlunoTests(TestCase):
             nome="Sistemas de Informação"
         )
 
-    def criar_aluno(self, **alteracoes):
+    def dados_aluno(self, **alteracoes):
         dados = {
             "nome_completo": "Ana Souza",
             "tipo_membro": "ALUNO",
@@ -20,7 +20,10 @@ class MembroAlunoTests(TestCase):
             "periodo": 3,
         }
         dados.update(alteracoes)
-        return Membro(**dados)
+        return dados
+
+    def criar_aluno(self, **alteracoes):
+        return Membro(**self.dados_aluno(**alteracoes))
 
     def verificar_erro_no_campo(self, membro, campo):
         with self.assertRaises(ValidationError) as contexto:
@@ -123,30 +126,126 @@ class MembroAlunoTests(TestCase):
 
     def test_curso_com_aluno_nao_pode_ser_excluido(self):
         aluno = self.criar_aluno()
-        aluno.full_clean()
         aluno.save()
 
         with self.assertRaises(ProtectedError):
             self.curso.delete()
 
     def test_aluno_pendente_pode_ser_lido_e_completado(self):
-        # Simula um registro antigo com os novos campos vazios.
-        # objects.create() não executa full_clean().
-        aluno = Membro.objects.create(
-            nome_completo="Aluno antigo",
-            tipo_membro="ALUNO",
-            ra="456",
+        aluno = self.criar_aluno(ra="456")
+        aluno.save()
+
+        # Simula exclusivamente um registro legado no banco.
+        # update() contorna save(); não é o fluxo normal de cadastro.
+        Membro.objects.filter(pk=aluno.pk).update(
+            curso=None,
+            periodo=None,
         )
 
         aluno.refresh_from_db()
         self.assertIsNone(aluno.curso)
         self.assertIsNone(aluno.periodo)
 
+        # O registro continua consultável, mas não pode ser salvo
+        # novamente enquanto os dados obrigatórios estiverem vazios.
+        with self.assertRaises(ValidationError):
+            aluno.save()
+
         aluno.curso = self.curso
         aluno.periodo = 2
-        aluno.full_clean()
         aluno.save()
 
         aluno.refresh_from_db()
         self.assertEqual(aluno.curso, self.curso)
         self.assertEqual(aluno.periodo, 2)
+
+    def test_save_rejeita_aluno_sem_curso_e_periodo(self):
+        aluno = self.criar_aluno(
+            curso=None,
+            periodo=None,
+        )
+
+        with self.assertRaises(ValidationError) as contexto:
+            aluno.save()
+
+        self.assertIn("curso", contexto.exception.message_dict)
+        self.assertIn("periodo", contexto.exception.message_dict)
+        self.assertEqual(Membro.objects.count(), 0)
+
+    def test_objects_create_rejeita_alunos_invalidos(self):
+        casos = [
+            ({"curso": None}, "curso"),
+            ({"periodo": None}, "periodo"),
+            ({"periodo": 0}, "periodo"),
+            ({"periodo": 13}, "periodo"),
+            ({"ra": None}, "ra"),
+            ({"siape": "987"}, "siape"),
+            ({"email": "email-invalido"}, "email"),
+        ]
+
+        for alteracoes, campo in casos:
+            with self.subTest(alteracoes=alteracoes):
+                with self.assertRaises(ValidationError) as contexto:
+                    Membro.objects.create(
+                        **self.dados_aluno(**alteracoes)
+                    )
+
+                self.assertIn(
+                    campo,
+                    contexto.exception.message_dict,
+                )
+                self.assertEqual(Membro.objects.count(), 0)
+
+    def test_objects_create_salva_aluno_valido(self):
+        aluno = Membro.objects.create(**self.dados_aluno())
+
+        aluno.refresh_from_db()
+        self.assertEqual(aluno.ra, "123")
+        self.assertEqual(aluno.curso, self.curso)
+        self.assertEqual(aluno.periodo, 3)
+        self.assertEqual(Membro.objects.count(), 1)
+
+    def test_save_rejeita_edicao_invalida_sem_alterar_banco(self):
+        aluno = Membro.objects.create(**self.dados_aluno())
+        aluno.periodo = 13
+
+        with self.assertRaises(ValidationError) as contexto:
+            aluno.save()
+
+        self.assertIn("periodo", contexto.exception.message_dict)
+
+        aluno.refresh_from_db()
+        self.assertEqual(aluno.periodo, 3)
+
+    def test_objects_create_valida_regras_do_professor(self):
+        casos = [
+            ({"siape": None}, "siape"),
+            ({"ra": "123"}, "ra"),
+            ({"curso": self.curso}, "curso"),
+            ({"periodo": 3}, "periodo"),
+        ]
+
+        for alteracoes, campo in casos:
+            with self.subTest(alteracoes=alteracoes):
+                dados = {
+                    "nome_completo": "Carlos Silva",
+                    "tipo_membro": "PROFESSOR",
+                    "siape": "987",
+                }
+                dados.update(alteracoes)
+
+                with self.assertRaises(ValidationError) as contexto:
+                    Membro.objects.create(**dados)
+
+                self.assertIn(
+                    campo,
+                    contexto.exception.message_dict,
+                )
+                self.assertEqual(Membro.objects.count(), 0)
+
+        professor = Membro.objects.create(
+            nome_completo="Carlos Silva",
+            tipo_membro="PROFESSOR",
+            siape="987",
+        )
+        self.assertIsNotNone(professor.pk)

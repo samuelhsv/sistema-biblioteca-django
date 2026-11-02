@@ -27,29 +27,35 @@ class Autor(models.Model):
 
 class Livro(models.Model):
     titulo = models.CharField(max_length=200)
+
     capa = models.ImageField(
         upload_to="media/images",
         null=True,
         blank=True,
     )
+
     autores = models.ManyToManyField(
         Autor,
         related_name="Livros",
     )
+
     categoria = models.ForeignKey(
         Categoria,
         on_delete=models.SET_NULL,
         null=True,
         related_name="Livros",
     )
+
     qtd_total = models.PositiveIntegerField(
         default=1,
         verbose_name="quantidade total",
     )
+
     qtd_disponivel = models.PositiveIntegerField(
         default=1,
         verbose_name="quantidade disponível",
     )
+
     disponivel = models.BooleanField(default=True)
 
     def __str__(self):
@@ -80,32 +86,38 @@ class Membro(models.Model):
         null=True,
         blank=True,
     )
+
     email = models.EmailField(
         max_length=255,
         null=True,
         blank=True,
     )
+
     telefone = models.CharField(
         max_length=30,
         null=True,
         blank=True,
     )
+
     tipo_membro = models.CharField(
         max_length=20,
         choices=TIPOS_DE_MEMBRO,
     )
+
     ra = models.CharField(
         max_length=50,
         unique=True,
         null=True,
         blank=True,
     )
+
     siape = models.CharField(
         max_length=50,
         unique=True,
         null=True,
         blank=True,
     )
+
     curso = models.ForeignKey(
         "Curso",
         on_delete=models.PROTECT,
@@ -113,6 +125,7 @@ class Membro(models.Model):
         blank=True,
         related_name="alunos",
     )
+
     periodo = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
@@ -125,6 +138,7 @@ class Membro(models.Model):
     )
 
     def clean(self):
+        """Valida as regras específicas de cada perfil."""
         super().clean()
         erros = {}
 
@@ -164,6 +178,19 @@ class Membro(models.Model):
         if erros:
             raise ValidationError(erros)
 
+    def save(self, *args, **kwargs):
+        """
+        Valida o membro antes de gravar.
+
+        full_clean() verifica os campos, executa clean() e verifica
+        a unicidade e as restrições aplicáveis.
+
+        Este método também é chamado por objects.create().
+        Operações em lote, como update() e bulk_create(), não o executam.
+        """
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def __str__(self):
         return (
             f"{self.nome_completo} "
@@ -183,20 +210,25 @@ class Emprestimo(models.Model):
         on_delete=models.CASCADE,
         related_name="livros_emprestados",
     )
+
     livro = models.ForeignKey(
         Livro,
         on_delete=models.CASCADE,
         related_name="livros_emprestados",
     )
+
     data_emprestimo = models.DateTimeField(default=timezone.now)
+
     data_prevista_devolucao = models.DateField(
         null=True,
         blank=True,
     )
+
     data_devolucao = models.DateField(
         null=True,
         blank=True,
     )
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_EMPRESTIMO,
