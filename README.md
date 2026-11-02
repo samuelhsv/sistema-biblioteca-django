@@ -326,7 +326,7 @@ O resultado da revisão de segurança final ficará em `docs/SEGURANCA.md`.
 
 Projeto estudantil desenvolvido por:
 
-| Nome | Frente |
+| Pessoa | Frente |
 |---|---|
 | **Samuel** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
 | **[Lilian Morais Brum](https://github.com/Lilianbrum)** | Cadastro, painel administrativo, auditoria e modelo de reservas |
