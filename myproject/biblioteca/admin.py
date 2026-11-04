@@ -16,11 +16,16 @@ class MembroAdmin(admin.ModelAdmin):
     list_display = ('nome_completo', 'tipo_membro', 'ra', 'siape', 'email')
     list_filter = ('tipo_membro',)
     search_fields = ('nome_completo', 'ra', 'siape')
-    
-    fieldsets = [
-        ('Informações Pessoais', {'fields': ['nome_completo', 'tipo_membro', 'email', 'telefone']}),
-        ('Identificadores Acadêmicos', {'fields': ['ra', 'siape']}),
-    ]
+
+    # Habilita campo de busca rápida/autocompletar para o campo 'usuario'
+   # ✅ DEPOIS
+autocomplete_fields = ['usuario']  # Corrigido para 'usuario' (com 'a')
+
+fieldsets = [
+    ('Vínculo', {'fields': ['usuario']}),  # Adicionado 'usuario' aos campos exibidos
+    ('Informações Pessoais', {'fields': ['nome_completo', 'tipo_membro', 'email', 'telefone']}),
+    ('Identificadores Acadêmicos', {'fields': ['ra', 'siape']}),
+]
 
 @admin.register(Emprestimo)
 class EmprestimoAdmin(admin.ModelAdmin):
