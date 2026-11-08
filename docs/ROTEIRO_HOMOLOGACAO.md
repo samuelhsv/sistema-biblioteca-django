@@ -25,7 +25,7 @@ verificam o código, mas não o servidor real (estáticos, e-mail, banco).
 | ID | Fluxo | Passos | Resultado esperado | Resultado |
 |---|---|---|---|---|
 | H-01 | Login no admin | Abrir `/admin/` e entrar | Painel abre **com estilo** | ☐ |
-| H-02 | Cadastrar livro | Criar livro com qtd_total = 2 | Salva; `qtd_disponivel` = 2 | ☐ |
+| H-02 | Cadastrar livro | Criar livro com qtd_total = 2 e qtd_disponivel = 2 | Salva; `qtd_total` = 2 e `qtd_disponivel` = 2 | ☐ |
 | H-03 | Empréstimo | Anotar `qtd_disponivel`; criar empréstimo | Diminui em 1 | ☐ |
 | H-04 | Devolução | Marcar o empréstimo como devolvido | Volta ao valor anotado | ☐ |
 | H-05 | Sem estoque | Emprestar livro com `qtd_disponivel` = 0 | Recusado com mensagem clara | ☐ |
