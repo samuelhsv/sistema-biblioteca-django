@@ -121,14 +121,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# Nome da rota ou URL para onde o usuário é enviado se tentar acessar uma página protegida sem estar logado
+
 LOGIN_URL = "login"
-
-# Página para onde o usuário é redirecionado automaticamente após fazer login com sucesso
-LOGIN_REDIRECT_URL = "portal:inicio"  # Ajuste para "portal:minha_conta" após a POR-05
-
-# Página para onde o usuário é redirecionado após sair (fazer logout)
-LOGOUT_REDIRECT_URL = "portal:inicio"
+LOGIN_REDIRECT_URL = "inicio"
+LOGOUT_REDIRECT_URL = "inicio"
 
 # Define o idioma padrão da aplicação para o português do Brasil
 LANGUAGE_CODE = "pt-br"

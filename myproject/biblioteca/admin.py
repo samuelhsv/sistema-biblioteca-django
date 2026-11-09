@@ -15,22 +15,10 @@ class CursoAdmin(admin.ModelAdmin):
     search_fields = ("nome",)
     ordering = ("nome",)
 
-
 @admin.register(Membro)
 class MembroAdmin(admin.ModelAdmin):
-    list_display = ('nome_completo', 'tipo_membro', 'ra', 'siape', 'email')
-    list_filter = ('tipo_membro',)
-    search_fields = ('nome_completo', 'ra', 'siape')
+    autocomplete_fields = ("usuario",)
 
-    # Habilita campo de busca rápida/autocompletar para o campo 'usuario'
-   # ✅ DEPOIS
-autocomplete_fields = ['usuario']  # Corrigido para 'usuario' (com 'a')
-
-fieldsets = [
-    ('Vínculo', {'fields': ['usuario']}),  # Adicionado 'usuario' aos campos exibidos
-    ('Informações Pessoais', {'fields': ['nome_completo', 'tipo_membro', 'email', 'telefone']}),
-    ('Identificadores Acadêmicos', {'fields': ['ra', 'siape']}),
-]
     list_display = (
         "nome_completo",
         "tipo_membro",
@@ -40,16 +28,25 @@ fieldsets = [
         "periodo",
         "email",
     )
+
     list_filter = ("tipo_membro", "curso")
+
     search_fields = (
         "nome_completo",
         "ra",
         "siape",
         "email",
     )
+
     list_select_related = ("curso",)
 
     fieldsets = (
+        (
+            "Vínculo",
+            {
+                "fields": ("usuario",)
+            },
+        ),
         (
             "Dados pessoais",
             {

@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase
@@ -249,3 +250,54 @@ class MembroAlunoTests(TestCase):
             siape="987",
         )
         self.assertIsNotNone(professor.pk)
+class AutenticacaoTests(TestCase):
+    def setUp(self):
+        self.usuario = User.objects.create_user(
+            username="123",
+            email="ana@email.com",
+            password="senha123",
+        )
+
+    def test_login_com_credenciais_corretas(self):
+        resposta = self.client.post(
+            "/contas/login/",
+            {
+                "username": "123",
+                "password": "senha123",
+            },
+        )
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertTrue(resposta.wsgi_request.user.is_authenticated)
+
+    def test_login_com_senha_incorreta(self):
+        resposta = self.client.post(
+            "/contas/login/",
+            {
+                "username": "123",
+                "password": "senhaerrada",
+            },
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertFalse(resposta.wsgi_request.user.is_authenticated)
+
+    def test_usuario_sem_membro_acessa_pagina_inicial(self):
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get("/")
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(
+            resposta,
+            "Sua conta não possui um membro vinculado.",
+        )
+        self.assertTrue(resposta.wsgi_request.user.is_authenticated)
+
+    def test_logout_desconecta_usuario(self):
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post("/contas/logout/")
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertFalse(resposta.wsgi_request.user.is_authenticated)

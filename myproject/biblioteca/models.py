@@ -76,6 +76,13 @@ class Curso(models.Model):
 
 
 class Membro(models.Model):
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="membro",
+    )
     TIPOS_DE_MEMBRO = [
         ("ALUNO", "Aluno"),
         ("PROFESSOR", "Professor"),
