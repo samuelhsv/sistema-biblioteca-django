@@ -8,6 +8,8 @@ admin.site.site_title = "Biblioteca FLUI"
 admin.site.site_header = "Biblioteca Comunitária FLUI"
 admin.site.index_title = "Painel de Controle e Gestão"
 
+from biblioteca.services import marcar_atrasados
+
 
 @admin.register(Curso)
 class CursoAdmin(admin.ModelAdmin):
@@ -63,6 +65,7 @@ class MembroAdmin(admin.ModelAdmin):
 
 
 @admin.register(Emprestimo)
+
 class EmprestimoAdmin(admin.ModelAdmin):
     list_display = (
         "livro",
@@ -77,6 +80,17 @@ class EmprestimoAdmin(admin.ModelAdmin):
         "livro__titulo",
         "membro__ra",
     )
+
+    actions = ["atualizar_atrasos_agora"]
+
+    @admin.action(description="Atualizar atrasos agora")
+    def atualizar_atrasos_agora(self, request, queryset):
+        total = marcar_atrasados()
+
+        self.message_user(
+            request,
+            f"{total} empréstimo(s) atualizado(s) para ATRASADO."
+        )
 
 
 @admin.register(Livro)

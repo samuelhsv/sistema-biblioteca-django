@@ -259,7 +259,7 @@ class Emprestimo(models.Model):
             self.__original_status = self.status
 
     def save(self, *args, **kwargs):
-        if not self.data_prevista_devolucao and self.membro:
+        if self.pk is None and not self.data_prevista_devolucao and self.membro:
             base_date = (
                 self.data_emprestimo.date()
                 if self.data_emprestimo
@@ -297,7 +297,7 @@ class Emprestimo(models.Model):
 
             elif (
                 self.status == "DEVOLVIDO"
-                and self.__original_status == "EMPRESTADO"
+                and self.__original_status in ("EMPRESTADO", "ATRASADO")
             ):
                 self.livro.disponivel = True
                 self.livro.qtd_disponivel = min(
