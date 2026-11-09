@@ -1,0 +1,189 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Início | Biblioteca FLUI{% endblock %}
+
+{% block content %}
+
+<section class="hero" aria-labelledby="hero-titulo">
+    <div class="container">
+        <span class="rotulo rotulo--claro">BIBLIOTECA FLUI</span>
+
+        <h1 id="hero-titulo">
+            Descubra um mundo de possibilidades através da leitura.
+        </h1>
+
+        <p>
+            Um espaço de compartilhamento, conhecimento e novas histórias.
+            Explore nosso acervo e encontre sua próxima leitura.
+        </p>
+
+        <form class="busca" action="{% url 'portal:catalogo' %}" method="get">
+            <input
+                type="search"
+                name="q"
+                placeholder="Buscar um livro..."
+                aria-label="Buscar livro"
+            >
+            <button type="submit">Buscar</button>
+        </form>
+    </div>
+</section>
+
+<section class="numeros" aria-label="Acervo em números">
+    <div class="container numeros__grid">
+
+        <div class="stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
+            </svg>
+            <strong>{{ total_titulos }}</strong>
+            <span>títulos no acervo</span>
+        </div>
+
+        <div class="stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M12 7v5l3 2"/>
+                <circle cx="12" cy="12" r="9"/>
+            </svg>
+            <strong>{{ total_disponiveis }}</strong>
+            <span>exemplares disponíveis agora</span>
+        </div>
+
+        <div class="stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2"/>
+                <path d="M3 10h18M9 4v6M15 4v6"/>
+            </svg>
+            <strong>{{ total_categorias }}</strong>
+            <span>categorias cadastradas</span>
+        </div>
+
+    </div>
+</section>
+
+<section class="recentes" aria-labelledby="recentes-titulo">
+    <div class="container">
+
+        <div class="secao-titulo">
+            <span class="rotulo">EXPLORE</span>
+            <h2 id="recentes-titulo">Livros recentes</h2>
+            <p>Conheça algumas das histórias disponíveis em nosso acervo.</p>
+        </div>
+
+        <div class="grid-livros">
+            {% for livro in livros_recentes %}
+                <article class="livro-card">
+
+                    {% if livro.capa %}
+                        <img
+                            src="{{ livro.capa.url }}"
+                            alt="Capa do livro {{ livro.titulo }}"
+                            class="livro-capa"
+                            loading="lazy"
+                        >
+                    {% else %}
+                        <div class="livro-sem-capa">
+                            Sem capa disponível
+                        </div>
+                    {% endif %}
+
+                    <h3 class="titulo">{{ livro.titulo }}</h3>
+
+                    {% with autores=livro.autores.all %}
+                        {% if autores %}
+                            <p class="autor">
+                                {% for autor in autores %}
+                                    {{ autor }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="meta">
+                        <span class="tag">{{ livro.categoria }}</span>
+
+                        {% if livro.qtd_disponivel > 0 %}
+                            <span class="selo selo--ok">
+                                {% if livro.qtd_disponivel == 1 %}
+                                    1 exemplar disponível
+                                {% else %}
+                                    {{ livro.qtd_disponivel }} exemplares disponíveis
+                                {% endif %}
+                            </span>
+                        {% else %}
+                            <span class="selo selo--off">Indisponível</span>
+                        {% endif %}
+                    </div>
+
+                </article>
+            {% empty %}
+                <p>Nenhum livro cadastrado ainda.</p>
+            {% endfor %}
+        </div>
+
+        <a class="btn-primario" href="{% url 'portal:catalogo' %}">
+            Ver catálogo completo →
+        </a>
+
+    </div>
+</section>
+
+<section class="informacoes" aria-labelledby="informacoes-titulo">
+    <div class="container">
+
+        <div class="secao-titulo">
+            <span class="rotulo">SAIBA MAIS</span>
+            <h2 id="informacoes-titulo">Informações práticas</h2>
+        </div>
+
+        <div class="informacoes__grid">
+
+            <div class="informacao">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 7v5l3 2"/>
+                </svg>
+                <h3>Horário de funcionamento</h3>
+                <p>Segunda a sexta-feira</p>
+                <p>Horário a confirmar</p>
+            </div>
+
+            <div class="informacao">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/>
+                    <circle cx="12" cy="10" r="2.5"/>
+                </svg>
+                <h3>Localização</h3>
+                <p>Biblioteca Comunitária FLUI</p>
+                <p>Sala e prédio a confirmar</p>
+            </div>
+
+            <div class="informacao">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="14" rx="2"/>
+                    <path d="m3 7 9 6 9-6"/>
+                </svg>
+                <h3>Contato</h3>
+                <p>E-mail: a confirmar</p>
+                <p>Telefone: a confirmar</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}

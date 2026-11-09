@@ -1,0 +1,73 @@
+
+
+{% extends 'base.html' %}
+
+{% block title %}Catálogo | Biblioteca FLUI{% endblock %}
+
+{% block content %}
+
+<section class="catalogo">
+    <h2>Catálogo de livros</h2>
+
+    <form method="GET" class="busca-livros">
+        <input
+            type="text"
+            name="q"
+            placeholder="Buscar livro..."
+            value="{{ busca }}"
+        >
+        <button type="submit">Buscar</button>
+    </form>
+<div class="catalogo-grid">
+        {% for livro in livros %}
+            <article class="livro-card">
+
+                {% if livro.capa %}
+                    <img
+                        src="{{ livro.capa.url }}"
+                        alt="Capa do livro {{ livro.titulo }}"
+                        class="livro-capa"
+                        loading="lazy"
+                    >
+                {% else %}
+                    <div class="livro-sem-capa">
+                        Sem capa disponível
+                    </div>
+                {% endif %}
+
+                <h3 class="titulo">{{ livro.titulo }}</h3>
+
+                {% with autores=livro.autores.all %}
+                    {% if autores %}
+                        <p class="autor">
+                            {% for autor in autores %}
+                                {{ autor }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="meta">
+                    <span class="tag">{{ livro.categoria }}</span>
+
+                    {% if livro.qtd_disponivel > 0 %}
+                        <span class="selo selo--ok">
+                            {% if livro.qtd_disponivel == 1 %}
+                                1 exemplar disponível
+                            {% else %}
+                                {{ livro.qtd_disponivel }} exemplares disponíveis
+                            {% endif %}
+                        </span>
+                    {% else %}
+                        <span class="selo selo--off">Indisponível</span>
+                    {% endif %}
+                </div>
+
+            </article>
+        {% empty %}
+            <p>Nenhum livro encontrado.</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}
