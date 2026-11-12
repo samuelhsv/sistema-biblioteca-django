@@ -17,9 +17,8 @@ def inicio(request):
     ).prefetch_related(
         'autores'
     ).order_by(
-        '-qtd_disponivel', '-id'
+        '-id'
     )[:6]
-
     return render(request, 'portal/inicio.html', {
         'total_titulos': total_titulos,
         'total_disponiveis': total_disponiveis,
