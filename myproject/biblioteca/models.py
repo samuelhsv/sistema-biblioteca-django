@@ -58,6 +58,26 @@ class Livro(models.Model):
 
     disponivel = models.BooleanField(default=True)
 
+    @property
+    def qtd_livre_para_reserva(self):
+        """
+        Retorna quantos exemplares podem receber novas reservas.
+
+        Reservas aguardando retirada seguram exemplares, mas não
+        alteram a quantidade física registrada em qtd_disponivel.
+        """
+        # Import local evita importação circular entre os apps.
+        from reservas.models import Reserva
+
+        aguardando_retirada = self.reservas.filter(
+            status=Reserva.Status.AGUARDANDO_RETIRADA
+        ).count()
+
+        return max(
+            self.qtd_disponivel - aguardando_retirada,
+            0,
+        )
+
     def __str__(self):
         return self.titulo
 
