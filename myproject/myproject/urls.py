@@ -14,15 +14,14 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
-from django.urls import path
-from django.views.generic.base import RedirectView
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    # When the user accesses the root URL, redirect them to 'admin/'
-    path('', RedirectView.as_view(url='admin/', permanent=True)), 
+    path('', include('portal.urls')),
     path('admin/', admin.site.urls),
 ]
 
