@@ -330,7 +330,10 @@ class Emprestimo(models.Model):
         super().save(*args, **kwargs)
 
         if self.status != self.__original_status:
-            if self.status == "EMPRESTADO":
+            if (
+                self.status in {"EMPRESTADO", "ATRASADO"}
+                and self.__original_status not in {"EMPRESTADO", "ATRASADO"}
+            ):
                 self.livro.qtd_disponivel -= 1
 
                 if self.livro.qtd_disponivel <= 0:
@@ -345,7 +348,7 @@ class Emprestimo(models.Model):
 
             elif (
                 self.status == "DEVOLVIDO"
-                and self.__original_status == "EMPRESTADO"
+                and self.__original_status in {"EMPRESTADO", "ATRASADO"}
             ):
                 self.livro.disponivel = True
                 self.livro.qtd_disponivel = min(
