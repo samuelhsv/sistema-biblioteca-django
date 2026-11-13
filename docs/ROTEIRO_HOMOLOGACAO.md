@@ -19,7 +19,7 @@ verificam o código, mas não o servidor real (estáticos, e-mail, banco).
 **Commit testado:** ______  **Data:** ______  **Quem testou:** ______
 
 ## Pré-condições
-- Fixture `dados_teste.json` carregada (dados fictícios)
+- Fixtures `fixtures/*.json` carregadas (veja [docs/FIXTURES.md](docs/FIXTURE.md))
 - Superusuário de teste criado (senha no gerenciador de senhas, nunca aqui)
 
 | ID | Fluxo | Passos | Resultado esperado | Resultado |
