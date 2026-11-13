@@ -291,9 +291,10 @@ O resultado da revisão de segurança final ficará em `docs/SEGURANCA.md`.
 | Documento | Conteúdo |
 |---|---|
 | [`BACKLOG_FLUI.md`](BACKLOG_FLUI.md) | Backlog completo: tarefas, sprints, dependências e decisões em aberto |
-| `DEPLOY.md` | Rotina de deploy e de backup *(a criar)* |
-| `CONTRIBUTING.md` | Padrões de branch, commit e revisão *(a criar)* |
-| `docs/ROTEIRO_HOMOLOGACAO.md` | Checklist de testes em homologação *(a criar)* |
+| [`DEPLOY.md`](DEPLOY.md) | Como atualizar a homologação e a produção |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Padrões de branch, commit e revisão |
+| [`docs/ROTEIRO_HOMOLOGACAO.md`](docs/ROTEIRO_HOMOLOGACAO.md) | Checklist de testes em homologação |
+| [`docs/FIXTURES.md`](docs/FIXTURES.md) | Dados de exemplo para homologação e para desenvolvimento local |
 | `docs/SEGURANCA.md` | Revisão de segurança *(a criar)* |
 | `docs/MANUAL_USUARIO.md` | Como usar o portal *(a criar)* |
 | `docs/MANUAL_BIBLIOTECARIO.md` | Empréstimo, devolução, renovação, retirada e inventário no admin *(a criar)* |
@@ -306,12 +307,9 @@ Projeto estudantil desenvolvido por:
 
 | Pessoa | Frente |
 |---|---|
-| **Samuel** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
-| **Lilian** | Cadastro, painel administrativo, auditoria e modelo de reservas |
-| **[Geovana Maciel Martins](https://github.com/GeovanaMaciel)** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
 | **[Samuel](https://github.com/samuelhsv)** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
 | **[Lilian Morais Brum](https://github.com/Lilianbrum)** | Cadastro, painel administrativo, auditoria e modelo de reservas |
-| **Geovana** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
+| **[Geovana Maciel Martins](https://github.com/GeovanaMaciel)** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
 | **Bruna** | Portal (conta do usuário), motor de restrições e revisão de segurança |
 
 ---
