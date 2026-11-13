@@ -53,6 +53,8 @@ python manage.py collectstatic --noinput
 ```
 Depois: aba **Web** → botão **Reload**.
 
+Para recriar os dados de teste, veja [docs/FIXTURES.md](docs/FIXTURE.md).
+
 ## 4. Atualizar a produção
 (igual à seção 3, mas com `main`, e **backup antes do migrate**)
 ```bash
