@@ -294,6 +294,7 @@ O resultado da revisão de segurança final ficará em `docs/SEGURANCA.md`.
 | [`DEPLOY.md`](DEPLOY.md) | Como atualizar a homologação e a produção |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Padrões de branch, commit e revisão |
 | [`docs/ROTEIRO_HOMOLOGACAO.md`](docs/ROTEIRO_HOMOLOGACAO.md) | Checklist de testes em homologação |
+| [`docs/FIXTURES.md`](docs/FIXTURES.md) | Dados de exemplo para homologação e para desenvolvimento local |
 | `docs/SEGURANCA.md` | Revisão de segurança *(a criar)* |
 | `docs/MANUAL_USUARIO.md` | Como usar o portal *(a criar)* |
 | `docs/MANUAL_BIBLIOTECARIO.md` | Empréstimo, devolução, renovação, retirada e inventário no admin *(a criar)* |
