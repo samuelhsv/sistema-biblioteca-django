@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Entrar no Sistema</h2>
+    
+    <!-- Exibe um alerta se houver erros de login -->
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            Usuário ou senha incorretos. Tente novamente.
+        </div>
+    {% endif %}
+
+    <!-- Formulário padrão de login do Django -->
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Entrar</button>
+    </form>
+</div>
+{% endblock %}

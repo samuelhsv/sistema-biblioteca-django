@@ -15,9 +15,10 @@ class CursoAdmin(admin.ModelAdmin):
     search_fields = ("nome",)
     ordering = ("nome",)
 
-
 @admin.register(Membro)
 class MembroAdmin(admin.ModelAdmin):
+    autocomplete_fields = ("usuario",)
+
     list_display = (
         "nome_completo",
         "tipo_membro",
@@ -27,16 +28,25 @@ class MembroAdmin(admin.ModelAdmin):
         "periodo",
         "email",
     )
+
     list_filter = ("tipo_membro", "curso")
+
     search_fields = (
         "nome_completo",
         "ra",
         "siape",
         "email",
     )
+
     list_select_related = ("curso",)
 
     fieldsets = (
+        (
+            "Vínculo",
+            {
+                "fields": ("usuario",)
+            },
+        ),
         (
             "Dados pessoais",
             {
