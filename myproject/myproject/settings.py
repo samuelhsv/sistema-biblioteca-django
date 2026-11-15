@@ -121,3 +121,13 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "inicio"
+LOGOUT_REDIRECT_URL = "inicio"
+
+# Define o idioma padrão da aplicação para o português do Brasil
+LANGUAGE_CODE = "pt-br"
+
+# Define o fuso horário oficial para o Brasil
+TIME_ZONE = "America/Sao_Paulo"
