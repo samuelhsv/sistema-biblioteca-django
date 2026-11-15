@@ -141,4 +141,4 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Biblioteca FLUI <bibliotecaflui.noreply@exemplo.com>")
-SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000")   # usado nos links dos e-mails
+SITE_URL = os.environ.get("SITE_URL", "http://127.0.0.1:8000")
