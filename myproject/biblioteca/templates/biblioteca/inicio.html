@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Bem-vindo à Biblioteca FLUI!</h1>
+
+    {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        <p>Você está conectado ao sistema.</p>
+
+        {% if membro %}
+            <p>Bem-vindo, {{ membro.nome_completo }}!</p>
+        {% else %}
+            <p>Sua conta não possui um membro vinculado.</p>
+        {% endif %}
+    {% else %}
+        <p>Você não está conectado.</p>
+        <a href="{% url 'login' %}" class="btn btn-primary">Entrar</a>
+    {% endif %}
+</div>
+{% endblock %}
