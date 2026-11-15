@@ -331,3 +331,15 @@ class EmailTests(TestCase):
         )
 
         self.assertEqual(mail.outbox[0].subject, "Teste FLUI")
+
+    def test_template_incluido_no_email(self):
+        enviar_email(
+            "Teste",
+            "emails/teste.txt",
+            {},
+            "email@exemplo.com"
+        )
+
+        self.assertIn("Olá!", mail.outbox[0].body)
+        self.assertIn("Este é um e-mail de teste", mail.outbox[0].body)
+        self.assertIn("Biblioteca FLUI", mail.outbox[0].body)
