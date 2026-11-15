@@ -12,7 +12,7 @@ class Command(BaseCommand):
             contexto={
                 "nome": "Usuário de teste",
             },
-            destinatario="seu-email@exemplo.com",
+            destinatario="email@exemplo.com",
         )
 
         self.stdout.write(
