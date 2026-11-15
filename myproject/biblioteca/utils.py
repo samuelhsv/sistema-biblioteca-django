@@ -1,4 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 def obter_membro(request):
     """
@@ -13,3 +16,13 @@ def obter_membro(request):
         except ObjectDoesNotExist:
             return None
     return None
+
+def enviar_email(assunto, template, contexto, destinatario):
+    mensagem = render_to_string(template, contexto)
+
+    send_mail(
+        subject=assunto,
+        message=mensagem,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[destinatario],
+    )
