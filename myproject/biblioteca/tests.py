@@ -2,8 +2,10 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase
+from django.core import mail
 
 from .models import Curso, Membro
+from biblioteca.utils import enviar_email
 
 
 class MembroAlunoTests(TestCase):
@@ -301,3 +303,21 @@ class AutenticacaoTests(TestCase):
 
         self.assertEqual(resposta.status_code, 302)
         self.assertFalse(resposta.wsgi_request.user.is_authenticated)
+
+from django.core import mail
+from django.test import TestCase
+from biblioteca.utils import enviar_email
+
+
+class EmailTests(TestCase):
+
+    def test_envia_email(self):
+        enviar_email(
+            "Teste",
+            "emails/teste.txt",
+            {},
+            "email@exemplo.com"
+        )
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["email@exemplo.com"])
