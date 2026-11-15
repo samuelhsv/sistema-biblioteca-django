@@ -315,7 +315,9 @@ class EmailTests(TestCase):
         enviar_email(
             "Teste",
             "emails/teste.txt",
-            {},
+            {
+                "nome": "Usuário de teste",
+            },
             "email@exemplo.com"
         )
 
@@ -326,7 +328,9 @@ class EmailTests(TestCase):
         enviar_email(
             "Teste FLUI",
             "emails/teste.txt",
-            {},
+            {
+                "nome": "Usuário de teste",
+            },
             "email@exemplo.com"
         )
 
@@ -336,10 +340,12 @@ class EmailTests(TestCase):
         enviar_email(
             "Teste",
             "emails/teste.txt",
-            {},
+            {
+                "nome": "Usuário de teste",
+            },
             "email@exemplo.com"
         )
 
-        self.assertIn("Olá!", mail.outbox[0].body)
+        self.assertIn("Olá, Usuário de teste!", mail.outbox[0].body)
         self.assertIn("Este é um e-mail de teste", mail.outbox[0].body)
         self.assertIn("Biblioteca FLUI", mail.outbox[0].body)
