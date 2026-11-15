@@ -321,3 +321,13 @@ class EmailTests(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["email@exemplo.com"])
+
+    def test_assunto_correto(self):
+        enviar_email(
+            "Teste FLUI",
+            "emails/teste.txt",
+            {},
+            "email@exemplo.com"
+        )
+
+        self.assertEqual(mail.outbox[0].subject, "Teste FLUI")
