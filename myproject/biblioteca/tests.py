@@ -304,13 +304,7 @@ class AutenticacaoTests(TestCase):
         self.assertEqual(resposta.status_code, 302)
         self.assertFalse(resposta.wsgi_request.user.is_authenticated)
 
-from django.core import mail
-from django.test import TestCase
-from biblioteca.utils import enviar_email
-
-
 class EmailTests(TestCase):
-
     def test_envia_email(self):
         enviar_email(
             "Teste",
