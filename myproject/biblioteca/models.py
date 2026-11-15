@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, router, transaction
 from django.utils import timezone
 
 
@@ -291,80 +291,76 @@ class Emprestimo(models.Model):
         default="EMPRESTADO",
     )
 
-    __original_status = None
-
     def clean(self):
         super().clean()
-
-        if self.pk is None and self.livro and not self.livro.disponivel:
+        if (
+            self._state.adding
+            and self.status in {"EMPRESTADO", "ATRASADO"}
+            and self.livro_id
+            and (not self.livro.disponivel or self.livro.qtd_disponivel <= 0)
+        ):
             raise ValidationError(
-                {
-                    "livro": (
-                        f"O livro '{self.livro.titulo}' não está "
-                        "disponível para empréstimo no momento."
-                    )
-                }
+                {"livro": "O livro não está disponível para empréstimo."}
             )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def save(self, *, force_insert=False, force_update=False,
+             using=None, update_fields=None):
+        if update_fields is not None:
+            update_fields = frozenset(update_fields)
+            if not update_fields:
+                return
 
-        if self.pk is None:
-            self.__original_status = None
-        else:
-            self.__original_status = self.status
+        banco = using or router.db_for_write(type(self), instance=self)
+        ativos = {"EMPRESTADO", "ATRASADO"}
 
-    def save(self, *args, **kwargs):
-        if not self.data_prevista_devolucao and self.membro:
-            base_date = (
-                self.data_emprestimo.date()
-                if self.data_emprestimo
-                else timezone.now().date()
-            )
+        if not self.data_prevista_devolucao and self.membro_id:
+            base_date = (self.data_emprestimo or timezone.now()).date()
+            dias = {"ALUNO": 14, "PROFESSOR": 28}.get(self.membro.tipo_membro, 7)
+            self.data_prevista_devolucao = base_date + timedelta(days=dias)
 
-            if self.membro.tipo_membro == "ALUNO":
-                self.data_prevista_devolucao = (
-                    base_date + timedelta(days=14)
-                )
-            elif self.membro.tipo_membro == "PROFESSOR":
-                self.data_prevista_devolucao = (
-                    base_date + timedelta(days=28)
-                )
-            else:
-                self.data_prevista_devolucao = (
-                    base_date + timedelta(days=7)
+        with transaction.atomic(using=banco):
+            anterior = None
+            if self.pk is not None:
+                anterior = (
+                    type(self).objects.using(banco).select_for_update()
+                    .filter(pk=self.pk).values_list("status", flat=True).first()
                 )
 
-        super().save(*args, **kwargs)
+            status_salvo = self.status
+            if update_fields is not None and "status" not in update_fields:
+                status_salvo = anterior
 
-        if self.status != self.__original_status:
-            if self.status == "EMPRESTADO":
-                self.livro.qtd_disponivel -= 1
+            retirar = status_salvo in ativos and anterior not in ativos
+            repor = status_salvo == "DEVOLVIDO" and anterior in ativos
 
-                if self.livro.qtd_disponivel <= 0:
-                    self.livro.disponivel = False
-                    self.livro.save(
-                        update_fields=["qtd_disponivel", "disponivel"]
-                    )
+            if retirar or repor:
+                livro = (
+                    Livro.objects.using(banco).select_for_update()
+                    .get(pk=self.livro_id)
+                )
+                if retirar:
+                    if not livro.disponivel or livro.qtd_disponivel <= 0:
+                        raise ValidationError(
+                            {"livro": "O livro não está disponível para empréstimo."}
+                        )
+                    livro.qtd_disponivel -= 1
                 else:
-                    self.livro.save(
-                        update_fields=["qtd_disponivel"]
+                    livro.qtd_disponivel = min(
+                        livro.qtd_total, livro.qtd_disponivel + 1
                     )
 
-            elif (
-                self.status == "DEVOLVIDO"
-                and self.__original_status == "EMPRESTADO"
-            ):
-                self.livro.disponivel = True
-                self.livro.qtd_disponivel = min(
-                    self.livro.qtd_total,
-                    self.livro.qtd_disponivel + 1,
-                )
-                self.livro.save(
-                    update_fields=["qtd_disponivel", "disponivel"]
+                livro.disponivel = livro.qtd_disponivel > 0
+                livro.save(
+                    using=banco,
+                    update_fields=["qtd_disponivel", "disponivel"],
                 )
 
-        self.__original_status = self.status
+            super().save(
+                force_insert=force_insert,
+                force_update=force_update,
+                using=banco,
+                update_fields=update_fields,
+            )
 
     class Meta:
         verbose_name = "Empréstimo"
