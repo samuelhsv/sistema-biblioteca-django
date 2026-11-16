@@ -262,8 +262,8 @@ Cada regra de negócio nova precisa de pelo menos um teste automatizado. Os e-ma
 | **Homologação** | `develop` | Testes antes de ir para produção, com **dados fictícios** |
 | **Local** | branches de tarefa | Desenvolvimento de cada pessoa |
 
-- **Produção:** `https://<usuario>.pythonanywhere.com` *(preencher)*
-- **Homologação:** `https://<usuario-homolog>.pythonanywhere.com` *(preencher)*
+- **Produção:** `https://bibliotecaflui.pythonanywhere.com`
+- **Homologação:** `https://fluihomolog.pythonanywhere.com`
 
 Rotina de atualização (detalhes no [`DEPLOY.md`](DEPLOY.md)):
 
