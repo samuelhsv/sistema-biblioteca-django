@@ -233,7 +233,7 @@ Acesse `http://127.0.0.1:8000/admin`.
 | `EMAIL_BACKEND` | Padrão imprime os e-mails no terminal; em homologação e produção use o SMTP | `django.core.mail.backends.smtp.EmailBackend` |
 | `EMAIL_HOST_USER` | Conta Gmail do projeto | — |
 | `EMAIL_HOST_PASSWORD` | **Senha de app** do Gmail (não a senha normal) | — |
-| `DEFAULT_FROM_EMAIL` | Remetente dos e-mails | `Biblioteca FLUI <nao-responda@exemplo.com>` |
+| `DEFAULT_FROM_EMAIL` | Remetente dos e-mails | `Biblioteca FLUI <email-do-projeto@gmail.com>` |
 | `SITE_URL` | Endereço do site, usado nos links dos e-mails | `http://127.0.0.1:8000` |
 
 Para gerar uma `SECRET_KEY`:
