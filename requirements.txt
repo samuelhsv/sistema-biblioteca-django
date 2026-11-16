@@ -21,3 +21,4 @@ sqlparse==0.5.5
     #   -r requirements.in
     #   django
 python-dotenv==1.2.4
+django-simple-history==3.13.0

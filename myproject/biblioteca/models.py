@@ -5,10 +5,13 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, router, transaction
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
 
 
 class Categoria(models.Model):
     nome = models.CharField(max_length=100, unique=True)
+
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.nome
@@ -59,6 +62,8 @@ class Livro(models.Model):
 
     disponivel = models.BooleanField(default=True)
 
+    history = HistoricalRecords()
+
     @property
     def qtd_livre_para_reserva(self):
         """
@@ -85,6 +90,8 @@ class Livro(models.Model):
 
 class Curso(models.Model):
     nome = models.CharField(max_length=100, unique=True)
+
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["nome"]
@@ -166,6 +173,8 @@ class Membro(models.Model):
         help_text="Período atual do aluno (1 a 12)",
         verbose_name="período",
     )
+
+    history = HistoricalRecords()
 
     def _normalizar_dados(self):
         """
@@ -311,17 +320,40 @@ class Emprestimo(models.Model):
         default="EMPRESTADO",
     )
 
+    history = HistoricalRecords()
+
     def clean(self):
+        """Valida estoque, reservas e pendências de novos empréstimos."""
         super().clean()
-        if (
-            self._state.adding
-            and self.status in {"EMPRESTADO", "ATRASADO"}
-            and self.livro_id
-            and (not self.livro.disponivel or self.livro.qtd_disponivel <= 0)
-        ):
-            raise ValidationError(
-                {"livro": "O livro não está disponível para empréstimo."}
+        if not self._state.adding or self.status not in {"EMPRESTADO", "ATRASADO"}:
+            return
+
+        erros = {}
+        if self.livro_id:
+            livro = self.livro
+            if not livro.disponivel or livro.qtd_disponivel <= 0:
+                erros["livro"] = "O livro não está disponível para empréstimo."
+            elif livro.qtd_livre_para_reserva <= 0:
+                erros["livro"] = (
+                    "Todos os exemplares disponíveis estão reservados para a fila."
+                )
+
+        if self.membro_id:
+            pendencias = type(self).objects.filter(membro_id=self.membro_id).filter(
+                models.Q(status="ATRASADO")
+                | models.Q(
+                    status="EMPRESTADO",
+                    data_prevista_devolucao__lt=timezone.localdate(),
+                )
             )
+            if pendencias.exists():
+                erros["membro"] = (
+                    "O membro possui devolução pendente e não pode realizar "
+                    "um novo empréstimo."
+                )
+
+        if erros:
+            raise ValidationError(erros)
 
     def save(self, *, force_insert=False, force_update=False,
              using=None, update_fields=None):
@@ -362,6 +394,14 @@ class Emprestimo(models.Model):
                     if not livro.disponivel or livro.qtd_disponivel <= 0:
                         raise ValidationError(
                             {"livro": "O livro não está disponível para empréstimo."}
+                        )
+                    if livro.qtd_livre_para_reserva <= 0:
+                        raise ValidationError(
+                            {"livro": "Todos os exemplares disponíveis estão reservados para a fila."}
+                        )
+                    if livro.qtd_livre_para_reserva <= 0:
+                        raise ValidationError(
+                            {"livro": "Todos os exemplares disponíveis estão reservados para a fila."}
                         )
                     livro.qtd_disponivel -= 1
                 else:

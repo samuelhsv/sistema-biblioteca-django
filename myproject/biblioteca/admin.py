@@ -2,6 +2,7 @@ from django.contrib import admin, messages
 from django.db import transaction
 from django.utils import timezone
 from django.utils.html import format_html
+from simple_history.admin import SimpleHistoryAdmin
 
 from .models import Autor, Categoria, Curso, Emprestimo, Livro, Membro
 
@@ -12,7 +13,8 @@ admin.site.index_title = "Painel de Controle e Gestão"
 
 
 @admin.register(Categoria)
-class CategoriaAdmin(admin.ModelAdmin):
+class CategoriaAdmin(SimpleHistoryAdmin):
+    list_display = ("nome",)
     search_fields = ("nome",)
 
 
@@ -23,7 +25,7 @@ class AutorAdmin(admin.ModelAdmin):
 
 
 @admin.register(Curso)
-class CursoAdmin(admin.ModelAdmin):
+class CursoAdmin(SimpleHistoryAdmin):
     list_display = ("nome",)
     search_fields = ("nome",)
     ordering = ("nome",)
@@ -47,7 +49,7 @@ class EmprestimoInline(admin.TabularInline):
 
 
 @admin.register(Membro)
-class MembroAdmin(admin.ModelAdmin):
+class MembroAdmin(SimpleHistoryAdmin):
     autocomplete_fields = ("usuario",)
 
     list_display = (
@@ -84,7 +86,7 @@ class MembroAdmin(admin.ModelAdmin):
 
 
 @admin.register(Emprestimo)
-class EmprestimoAdmin(admin.ModelAdmin):
+class EmprestimoAdmin(SimpleHistoryAdmin):
     list_display = (
         "membro",
         "livro",
@@ -175,7 +177,7 @@ class EmprestimoAdmin(admin.ModelAdmin):
 
 
 @admin.register(Livro)
-class LivroAdmin(admin.ModelAdmin):
+class LivroAdmin(SimpleHistoryAdmin):
     fields = (
         "capa",
         "image_preview",
