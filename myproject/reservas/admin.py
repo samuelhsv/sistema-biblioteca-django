@@ -2,9 +2,11 @@ from django.contrib import admin
 
 from .models import Reserva
 
+from simple_history.admin import SimpleHistoryAdmin
+
 
 @admin.register(Reserva)
-class ReservaAdmin(admin.ModelAdmin):
+class ReservaAdmin(SimpleHistoryAdmin):
     list_display = (
         "membro",
         "livro",

@@ -5,10 +5,13 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, router, transaction
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
 
 
 class Categoria(models.Model):
     nome = models.CharField(max_length=100, unique=True)
+
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.nome
@@ -59,6 +62,8 @@ class Livro(models.Model):
 
     disponivel = models.BooleanField(default=True)
 
+    history = HistoricalRecords()
+
     @property
     def qtd_livre_para_reserva(self):
         """
@@ -85,6 +90,8 @@ class Livro(models.Model):
 
 class Curso(models.Model):
     nome = models.CharField(max_length=100, unique=True)
+
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["nome"]
@@ -166,6 +173,8 @@ class Membro(models.Model):
         help_text="Período atual do aluno (1 a 12)",
         verbose_name="período",
     )
+
+    history = HistoricalRecords()
 
     def _normalizar_dados(self):
         """
@@ -310,6 +319,8 @@ class Emprestimo(models.Model):
         choices=STATUS_EMPRESTIMO,
         default="EMPRESTADO",
     )
+
+    history = HistoricalRecords()
 
     def clean(self):
         super().clean()

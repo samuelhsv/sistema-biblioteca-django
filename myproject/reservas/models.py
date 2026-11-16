@@ -3,7 +3,7 @@ import uuid
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-
+from simple_history.models import HistoricalRecords
 
 class Reserva(models.Model):
     class Status(models.TextChoices):
@@ -65,6 +65,8 @@ class Reserva(models.Model):
         unique=True,
         editable=False,
     )
+
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["criada_em", "pk"]
