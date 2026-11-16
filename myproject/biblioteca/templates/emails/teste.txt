@@ -1,0 +1,5 @@
+Olá, {{ nome }}!
+
+Este é um e-mail de teste da Biblioteca FLUI.
+
+Se você recebeu esta mensagem, o envio de e-mails está funcionando corretamente.

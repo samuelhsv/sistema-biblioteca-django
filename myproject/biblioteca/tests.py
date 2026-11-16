@@ -4,8 +4,10 @@ from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.forms import modelform_factory
 from django.test import TestCase
+from django.core import mail
 
 from .models import Curso, Membro
+from biblioteca.utils import enviar_email
 
 
 class MembroAlunoTests(TestCase):
@@ -554,3 +556,43 @@ class AutenticacaoTests(TestCase):
 
         self.assertEqual(resposta.status_code, 302)
         self.assertFalse(resposta.wsgi_request.user.is_authenticated)
+
+class EmailTests(TestCase):
+    def test_envia_email(self):
+        enviar_email(
+            "Teste",
+            "emails/teste.txt",
+            {
+                "nome": "Usuário de teste",
+            },
+            "email@exemplo.com"
+        )
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["email@exemplo.com"])
+
+    def test_assunto_correto(self):
+        enviar_email(
+            "Teste FLUI",
+            "emails/teste.txt",
+            {
+                "nome": "Usuário de teste",
+            },
+            "email@exemplo.com"
+        )
+
+        self.assertEqual(mail.outbox[0].subject, "Teste FLUI")
+
+    def test_template_incluido_no_email(self):
+        enviar_email(
+            "Teste",
+            "emails/teste.txt",
+            {
+                "nome": "Usuário de teste",
+            },
+            "email@exemplo.com"
+        )
+
+        self.assertIn("Olá, Usuário de teste!", mail.outbox[0].body)
+        self.assertIn("Este é um e-mail de teste", mail.outbox[0].body)
+        self.assertIn("Biblioteca FLUI", mail.outbox[0].body)
