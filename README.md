@@ -4,7 +4,7 @@
 
 Sistema web de gestão de acervo, empréstimos e reservas para a Biblioteca Comunitária FLUI. Projeto estudantil desenvolvido em **Django** (arquitetura **MVT**), com deploy no **PythonAnywhere**.
 
-> 🚧 **Projeto em desenvolvimento.** O núcleo administrativo (acervo, membros e empréstimos) já está em produção. Portal público, fila de espera, restrições e auditoria estão sendo construídos em sprints até **17/12/2026**. A seção [Status do projeto](#-status-do-projeto) mostra o que já existe e o que está planejado.
+> 🚧 **Projeto em desenvolvimento.** O núcleo administrativo (acervo, membros e empréstimos) já está em produção. Portal público, fila de espera e restrições estão sendo construídos em sprints até **17/12/2026**. A seção [Status do projeto](#-status-do-projeto) mostra o que já existe e o que está planejado.
 
 <!-- Sugestão: adicione aqui o selo do CI depois da tarefa GOV-03 -->
 <!-- ![CI](https://github.com/<org>/<repo>/actions/workflows/ci.yml/badge.svg) -->
@@ -48,7 +48,8 @@ O projeto segue o princípio de **separação de responsabilidades**: regras de 
 | Portal público: layout, login, catálogo, detalhe do livro, "Minha conta" | 🔜 Sprints 1 a 3 |
 | Bloqueio por pendência, marcação automática de atrasos, renovação | 🔜 Sprints 2 e 3 |
 | Reservas, fila de espera e e-mails de aceite/recusa | 🔜 Sprints 1 a 4 |
-| Trilha de auditoria e conferência de inventário | 🔜 Sprints 2 e 3 |
+| [Trilha de auditoria](#auditoria-de-alterações) | ✅ Implementada no código |
+| Conferência de inventário | 🔜 Planejada |
 | Ambiente de homologação, CI e configuração segura | 🔜 Sprints 0 a 2 |
 | Otimização de consultas e revisão de segurança | 🔜 Sprint 4 |
 
@@ -149,7 +150,7 @@ Sempre que um exemplar é liberado (devolução, cancelamento, recusa ou expira�
 - **Python** e **Django** (MVT, ORM, Admin, autenticação)
 - **SQLite** (com caminho aberto para PostgreSQL)
 - **Bootstrap 5.3** (portal)
-- **django-simple-history** (auditoria) *(planejado)*
+- **django-simple-history** (auditoria)
 - **python-dotenv** (configuração por variáveis de ambiente) *(planejado)*
 - **GitHub Actions** (integração contínua) *(planejado)*
 - **PythonAnywhere** (hospedagem)
