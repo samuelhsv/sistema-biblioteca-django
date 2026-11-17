@@ -234,7 +234,7 @@ Acesse `http://127.0.0.1:8000/admin`.
 | `EMAIL_BACKEND` | Padrão imprime os e-mails no terminal; em homologação e produção use o SMTP | `django.core.mail.backends.smtp.EmailBackend` |
 | `EMAIL_HOST_USER` | Conta Gmail do projeto | — |
 | `EMAIL_HOST_PASSWORD` | **Senha de app** do Gmail (não a senha normal) | — |
-| `DEFAULT_FROM_EMAIL` | Remetente dos e-mails | `Biblioteca FLUI <nao-responda@exemplo.com>` |
+| `DEFAULT_FROM_EMAIL` | Remetente dos e-mails | `Biblioteca FLUI <email-do-projeto@gmail.com>` |
 | `SITE_URL` | Endereço do site, usado nos links dos e-mails | `http://127.0.0.1:8000` |
 
 Para gerar uma `SECRET_KEY`:
@@ -263,8 +263,8 @@ Cada regra de negócio nova precisa de pelo menos um teste automatizado. Os e-ma
 | **Homologação** | `develop` | Testes antes de ir para produção, com **dados fictícios** |
 | **Local** | branches de tarefa | Desenvolvimento de cada pessoa |
 
-- **Produção:** `https://<usuario>.pythonanywhere.com` *(preencher)*
-- **Homologação:** `https://<usuario-homolog>.pythonanywhere.com` *(preencher)*
+- **Produção:** `https://bibliotecaflui.pythonanywhere.com`
+- **Homologação:** `https://fluihomolog.pythonanywhere.com`
 
 Rotina de atualização (detalhes no [`DEPLOY.md`](DEPLOY.md)):
 
@@ -318,6 +318,7 @@ O resultado da revisão de segurança final ficará em `docs/SEGURANCA.md`.
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Padrões de branch, commit e revisão |
 | [`docs/ROTEIRO_HOMOLOGACAO.md`](docs/ROTEIRO_HOMOLOGACAO.md) | Checklist de testes em homologação |
 | [`docs/FIXTURES.md`](docs/FIXTURES.md) | Dados de exemplo para homologação e para desenvolvimento local |
+| [`docs/TESTES_EMAIL.md`](docs/TESTES_EMAIL.md) | Como testar o envio de emails |
 | `docs/SEGURANCA.md` | Revisão de segurança *(a criar)* |
 | `docs/MANUAL_USUARIO.md` | Como usar o portal *(a criar)* |
 | `docs/MANUAL_BIBLIOTECARIO.md` | Empréstimo, devolução, renovação, retirada e inventário no admin *(a criar)* |
