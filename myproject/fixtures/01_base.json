@@ -1,0 +1,60 @@
+[
+{
+  "model": "biblioteca.livro",
+  "pk": 1,
+  "fields": {
+    "titulo": "Código Limpo",
+    "capa": "",
+    "categoria": 1,
+    "qtd_total": 2,
+    "qtd_disponivel": 2,
+    "disponivel": true,
+    "autores": [
+      1
+    ]
+  }
+},
+{
+  "model": "biblioteca.livro",
+  "pk": 2,
+  "fields": {
+    "titulo": "Dom Casmurro",
+    "capa": "",
+    "categoria": 2,
+    "qtd_total": 1,
+    "qtd_disponivel": 1,
+    "disponivel": true,
+    "autores": [2]
+  }
+},
+{
+  "model": "biblioteca.categoria",
+  "pk": 1,
+  "fields": {
+    "nome": "Tecnologia da Informação"
+  }
+},
+{
+  "model": "biblioteca.categoria",
+  "pk": 2,
+  "fields": {
+    "nome": "Romance"
+  }
+},
+{
+  "model": "biblioteca.autor",
+  "pk": 1,
+  "fields": {
+    "primeiro_nome": "Robert",
+    "sobrenome": "Martin"
+  }
+},
+{
+  "model": "biblioteca.autor",
+  "pk": 2,
+  "fields": {
+    "primeiro_nome": "Machado",
+    "sobrenome": "de Assis"
+  }
+}
+]

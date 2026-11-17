@@ -1,0 +1,51 @@
+[
+{
+  "model": "biblioteca.membro",
+  "pk": 100,
+  "fields": {
+    "nome_completo": "João Silva Ramos",
+    "email": "joao@example.com",
+    "telefone": null,
+    "tipo_membro": "ALUNO",
+    "ra": "RA123456",
+    "siape": null,
+    "curso": 100,
+    "periodo": 2
+  }
+},
+{
+  "model": "biblioteca.membro",
+  "pk": 101,
+  "fields": {
+    "nome_completo": "Carlos Alberto Souza",
+    "email": "carlos.souza@example.com",
+    "telefone": null,
+    "tipo_membro": "PROFESSOR",
+    "ra": null,
+    "siape": "SIAPE789",
+    "curso": null,
+    "periodo": null
+  }
+},
+{
+  "model": "biblioteca.membro",
+  "pk": 102,
+  "fields": {
+    "nome_completo": "Josias Madeiro",
+    "email": "josias@example.com",
+    "telefone": null,
+    "tipo_membro": "ALUNO",
+    "ra": "RA112233",
+    "siape": null,
+    "curso": 100,
+    "periodo": 4
+  }
+},
+{
+  "model": "biblioteca.curso",
+  "pk": 100,
+  "fields": {
+    "nome": "Ciência da Computação"
+  }
+}
+]
