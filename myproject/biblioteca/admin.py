@@ -107,7 +107,7 @@ class EmprestimoAdmin(SimpleHistoryAdmin):
     )
     autocomplete_fields = ("membro", "livro")
     list_select_related = ("membro", "livro")
-    actions = ("marcar_como_devolvido",)
+    actions = ("marcar_como_devolvido", "atualizar_atrasos_agora")
 
     @admin.display(description="Status", ordering="status")
     def status_colorido(self, obj):
@@ -177,7 +177,6 @@ class EmprestimoAdmin(SimpleHistoryAdmin):
                 messages.WARNING,
             )
 
-    actions = ["atualizar_atrasos_agora"]
 
     @admin.action(description="Atualizar atrasos agora")
     def atualizar_atrasos_agora(self, request, queryset):

@@ -270,10 +270,12 @@ class EmprestimoTests(TestCase):
         )
 
     def criar_emprestimo(self):
-        return Emprestimo.objects.create(
+        emprestimo = Emprestimo.objects.create(
             membro=self.membro,
             livro=self.livro,
         )
+        self.livro.refresh_from_db()
+        return emprestimo
 
     def test_emprestado_para_atrasado_nao_altera_estoque(self):
         emprestimo = self.criar_emprestimo()
@@ -374,7 +376,7 @@ class EmprestimoTests(TestCase):
 
         emprestimo.refresh_from_db()
         self.assertEqual(emprestimo.status, "ATRASADO")
-        
+
     def test_marcar_atrasados_nao_altera_emprestimo_que_vence_hoje(self):
         emprestimo = Emprestimo.objects.create(
             membro=self.membro,
