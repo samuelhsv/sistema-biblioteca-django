@@ -276,6 +276,19 @@ class Membro(models.Model):
         self.full_clean()
         return super().save(*args, **kwargs)
 
+    def emprestimos_pendentes(self):
+        hoje = timezone.localdate()
+        return self.livros_emprestados.filter(
+            models.Q(status="ATRASADO")
+            | models.Q(
+                status="EMPRESTADO",
+                data_prevista_devolucao__lt=hoje,
+            )
+        )
+
+    def possui_pendencia(self):
+        return self.emprestimos_pendentes().exists()
+
     def __str__(self):
         return (
             f"{self.nome_completo} "
@@ -338,19 +351,10 @@ class Emprestimo(models.Model):
                     "Todos os exemplares disponíveis estão reservados para a fila."
                 )
 
-        if self.membro_id:
-            pendencias = type(self).objects.filter(membro_id=self.membro_id).filter(
-                models.Q(status="ATRASADO")
-                | models.Q(
-                    status="EMPRESTADO",
-                    data_prevista_devolucao__lt=timezone.localdate(),
-                )
+        if self.membro_id and self.membro.possui_pendencia():
+            erros["membro"] = (
+                "Este membro tem devolução pendente e não pode pegar novos livros."
             )
-            if pendencias.exists():
-                erros["membro"] = (
-                    "O membro possui devolução pendente e não pode realizar "
-                    "um novo empréstimo."
-                )
 
         if erros:
             raise ValidationError(erros)
