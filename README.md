@@ -4,7 +4,7 @@
 
 Sistema web de gestão de acervo, empréstimos e reservas para a Biblioteca Comunitária FLUI. Projeto estudantil desenvolvido em **Django** (arquitetura **MVT**), com deploy no **PythonAnywhere**.
 
-> 🚧 **Projeto em desenvolvimento.** O núcleo administrativo (acervo, membros e empréstimos) já está em produção. Portal público, fila de espera, restrições e auditoria estão sendo construídos em sprints até **17/12/2026**. A seção [Status do projeto](#-status-do-projeto) mostra o que já existe e o que está planejado.
+> 🚧 **Projeto em desenvolvimento.** O núcleo administrativo (acervo, membros e empréstimos) já está em produção. Portal público, fila de espera e restrições estão sendo construídos em sprints até **17/12/2026**. A seção [Status do projeto](#-status-do-projeto) mostra o que já existe e o que está planejado.
 
 <!-- Sugestão: adicione aqui o selo do CI depois da tarefa GOV-03 -->
 <!-- ![CI](https://github.com/<org>/<repo>/actions/workflows/ci.yml/badge.svg) -->
@@ -48,7 +48,8 @@ O projeto segue o princípio de **separação de responsabilidades**: regras de 
 | Portal público: layout, login, catálogo, detalhe do livro, "Minha conta" | 🔜 Sprints 1 a 3 |
 | Bloqueio por pendência, marcação automática de atrasos, renovação | 🔜 Sprints 2 e 3 |
 | Reservas, fila de espera e e-mails de aceite/recusa | 🔜 Sprints 1 a 4 |
-| Trilha de auditoria e conferência de inventário | 🔜 Sprints 2 e 3 |
+| [Trilha de auditoria](#auditoria-de-alterações) | ✅ Implementada no código |
+| Conferência de inventário | 🔜 Planejada |
 | Ambiente de homologação, CI e configuração segura | 🔜 Sprints 0 a 2 |
 | Otimização de consultas e revisão de segurança | 🔜 Sprint 4 |
 
@@ -149,7 +150,7 @@ Sempre que um exemplar é liberado (devolução, cancelamento, recusa ou expira�
 - **Python** e **Django** (MVT, ORM, Admin, autenticação)
 - **SQLite** (com caminho aberto para PostgreSQL)
 - **Bootstrap 5.3** (portal)
-- **django-simple-history** (auditoria) *(planejado)*
+- **django-simple-history** (auditoria)
 - **python-dotenv** (configuração por variáveis de ambiente) *(planejado)*
 - **GitHub Actions** (integração contínua) *(planejado)*
 - **PythonAnywhere** (hospedagem)
@@ -159,43 +160,65 @@ Sempre que um exemplar é liberado (devolução, cancelamento, recusa ou expira�
 ---
 
 ## 💻 Como rodar localmente
+## Rodando o projeto na sua máquina
 
-**Pré-requisitos:** Python (mesma versão do servidor), Git e, de preferência, VS Code com a extensão Python.
+### 1. Clonar e criar o ambiente virtual
 
 ```bash
-# 1. Clone o repositório
-git clone <URL-DO-REPOSITORIO>
-cd <pasta-do-projeto>
+git clone <URL do repositório>
+cd sistema-biblioteca-django
 
-# 2. Crie e ative o ambiente virtual
 python -m venv .venv
-# Windows:      .venv\Scripts\activate
-# Linux ou Mac: source .venv/bin/activate
+# Linux ou Mac:  source .venv/bin/activate
+# Windows:       .venv\Scripts\activate
 
-# 3. Instale as dependências
 pip install -r requirements.txt
+```
 
-# 4. Configure as variáveis de ambiente (veja a seção abaixo)
-cp .env.example .env      # depois edite o .env
+### 2. Configurar o arquivo `.env`
 
-# 5. Crie o banco, o superusuário e rode o servidor
+O projeto lê suas configurações sensíveis (chave secreta, modo debug) de um
+arquivo `.env`, que **não vai para o Git**. Cada pessoa cria o seu:
+
+```bash
+cd myproject
+cp .env.example .env        # Windows: copy .env.example .env
+```
+
+Abra o `.env` e preencha:
+
+| Variável | Para que serve | Valor local |
+|---|---|---|
+| `SECRET_KEY` | Chave usada pelo Django para assinar sessões, tokens e cookies | Gere uma (comando abaixo) |
+| `DEBUG` | Liga o modo de desenvolvimento (páginas de erro detalhadas) | `True` |
+| `ALLOWED_HOSTS` | Endereços que o servidor aceita, separados por vírgula, **sem espaços** | `127.0.0.1,localhost` |
+
+Para gerar uma `SECRET_KEY` nova:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+Cole o resultado entre aspas simples: `SECRET_KEY='...'`.
+
+> ⚠️ Nunca faça commit do `.env`, nunca compartilhe sua chave e nunca use
+> `DEBUG=True` em produção. Cada ambiente (seu computador, homologação,
+> produção) usa uma `SECRET_KEY` diferente.
+
+### 3. Preparar o banco e rodar
+
+```bash
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Acesse:
+Acesse `http://127.0.0.1:8000/admin`.
 
-- Portal: <http://127.0.0.1:8000/>
-- Administração: <http://127.0.0.1:8000/admin/>
+### Problemas comuns
 
-**Primeiro teste:** no admin, cadastre 1 categoria, 2 livros, 1 aluno, 1 professor e 1 empréstimo. Observe o `qtd_disponivel` diminuir ao emprestar e voltar ao marcar como devolvido.
-
-**Problemas comuns**
-
+- `KeyError: 'SECRET_KEY'`: o `.env` não existe ou não está na mesma pasta do `manage.py`.
 - `No module named django`: o ambiente virtual não está ativado.
-- No Windows, se `python` não funcionar, tente `py`.
-- Nunca faça commit de `.venv/`, `.env` ou `db.sqlite3`. Rode `git status` antes de todo `git add`.
 
 ---
 
@@ -211,7 +234,7 @@ Acesse:
 | `EMAIL_BACKEND` | Padrão imprime os e-mails no terminal; em homologação e produção use o SMTP | `django.core.mail.backends.smtp.EmailBackend` |
 | `EMAIL_HOST_USER` | Conta Gmail do projeto | — |
 | `EMAIL_HOST_PASSWORD` | **Senha de app** do Gmail (não a senha normal) | — |
-| `DEFAULT_FROM_EMAIL` | Remetente dos e-mails | `Biblioteca FLUI <nao-responda@exemplo.com>` |
+| `DEFAULT_FROM_EMAIL` | Remetente dos e-mails | `Biblioteca FLUI <email-do-projeto@gmail.com>` |
 | `SITE_URL` | Endereço do site, usado nos links dos e-mails | `http://127.0.0.1:8000` |
 
 Para gerar uma `SECRET_KEY`:
@@ -240,8 +263,8 @@ Cada regra de negócio nova precisa de pelo menos um teste automatizado. Os e-ma
 | **Homologação** | `develop` | Testes antes de ir para produção, com **dados fictícios** |
 | **Local** | branches de tarefa | Desenvolvimento de cada pessoa |
 
-- **Produção:** `https://<usuario>.pythonanywhere.com` *(preencher)*
-- **Homologação:** `https://<usuario-homolog>.pythonanywhere.com` *(preencher)*
+- **Produção:** `https://bibliotecaflui.pythonanywhere.com`
+- **Homologação:** `https://fluihomolog.pythonanywhere.com`
 
 Rotina de atualização (detalhes no [`DEPLOY.md`](DEPLOY.md)):
 
@@ -291,9 +314,11 @@ O resultado da revisão de segurança final ficará em `docs/SEGURANCA.md`.
 | Documento | Conteúdo |
 |---|---|
 | [`BACKLOG_FLUI.md`](BACKLOG_FLUI.md) | Backlog completo: tarefas, sprints, dependências e decisões em aberto |
-| `DEPLOY.md` | Rotina de deploy e de backup *(a criar)* |
-| `CONTRIBUTING.md` | Padrões de branch, commit e revisão *(a criar)* |
-| `docs/ROTEIRO_HOMOLOGACAO.md` | Checklist de testes em homologação *(a criar)* |
+| [`DEPLOY.md`](DEPLOY.md) | Como atualizar a homologação e a produção |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Padrões de branch, commit e revisão |
+| [`docs/ROTEIRO_HOMOLOGACAO.md`](docs/ROTEIRO_HOMOLOGACAO.md) | Checklist de testes em homologação |
+| [`docs/FIXTURES.md`](docs/FIXTURES.md) | Dados de exemplo para homologação e para desenvolvimento local |
+| [`docs/TESTES_EMAIL.md`](docs/TESTES_EMAIL.md) | Como testar o envio de emails |
 | `docs/SEGURANCA.md` | Revisão de segurança *(a criar)* |
 | `docs/MANUAL_USUARIO.md` | Como usar o portal *(a criar)* |
 | `docs/MANUAL_BIBLIOTECARIO.md` | Empréstimo, devolução, renovação, retirada e inventário no admin *(a criar)* |
@@ -308,7 +333,7 @@ Projeto estudantil desenvolvido por:
 |---|---|
 | **[Samuel](https://github.com/samuelhsv)** | Infraestrutura, governança de código, homologação e núcleo da fila de espera |
 | **[Lilian Morais Brum](https://github.com/Lilianbrum)** | Cadastro, painel administrativo, auditoria e modelo de reservas |
-| **Geovana** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
+| **[Geovana Maciel Martins](https://github.com/GeovanaMaciel)** | Organização do quadro, portal (layout e catálogo), inventário e desempenho |
 | **Bruna** | Portal (conta do usuário), motor de restrições e revisão de segurança |
 
 ---
@@ -316,3 +341,33 @@ Projeto estudantil desenvolvido por:
 ## 📄 Licença
 
 *(A definir pela equipe e pelo professor.)*
+
+## Auditoria de alterações
+
+Livro, Membro, Empréstimo, Reserva, Categoria e Curso possuem histórico
+de criação, alteração e exclusão, disponível no botão Histórico do admin.
+
+Cada registro histórico guarda uma cópia dos dados e a data da operação.
+Alterações feitas no admin identificam o usuário autenticado. Operações
+fora de uma requisição precisam informar explicitamente o responsável
+por meio de `_history_user`; caso contrário, o usuário fica vazio.
+
+O acesso ao histórico segue as permissões dos respectivos modelos no
+admin. Contas administrativas devem ser concedidas somente às pessoas
+autorizadas pela biblioteca.
+
+O histórico inclui cópias de dados pessoais, como nome, e-mail, telefone,
+RA e SIAPE. Atualmente não há exclusão automática desses registros.
+O prazo de retenção e o procedimento de descarte ainda precisam ser
+definidos pela biblioteca antes do uso em produção.
+
+Após aplicar as migrações, o histórico inicial dos registros existentes
+pode ser criado com:
+
+    python manage.py populate_history --auto
+
+Esse comando registra o estado atual e não recupera alterações anteriores.
+
+Operações com QuerySet.update(), bulk_create() e SQL direto não geram
+histórico automaticamente. Alterações na relação de autores de um livro
+também não são acompanhadas nesta implementação.
