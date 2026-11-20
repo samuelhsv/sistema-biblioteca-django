@@ -346,7 +346,8 @@ class Emprestimo(models.Model):
                     data_prevista_devolucao__lt=timezone.localdate(),
                 )
             )
-            if pendencias.exists():
+
+        if pendencias.exists():
                 erros["membro"] = (
                     "O membro possui devolução pendente e não pode realizar "
                     "um novo empréstimo."
