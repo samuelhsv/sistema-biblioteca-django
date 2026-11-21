@@ -1,0 +1,38 @@
+
+{% extends "biblioteca/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Relatório de divergências</h1>
+
+    <p>Conferência: {{ conferencia.id }}</p>
+
+    {% if itens %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Livro</th>
+                    <th>Quantidade esperada</th>
+                    <th>Quantidade encontrada</th>
+                    <th>Diferença</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in itens %}
+                    <tr>
+                        <td>{{ item.livro }}</td>
+                        <td>{{ item.qtd_esperada }}</td>
+                        <td>{{ item.qtd_encontrada }}</td>
+                        <td class="text-danger fw-bold">
+                            {{ item.diferenca }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Não foram encontradas divergências nesta conferência.</p>
+    {% endif %}
+</div>
+{% endblock %}
