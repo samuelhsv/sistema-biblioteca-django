@@ -683,3 +683,29 @@ class BloqueioEmprestimoPendenciaTests(TestCase):
         novo.full_clean()
         novo.save()
         self.assertEqual(Emprestimo.objects.count(), 2)
+
+    def test_emprestimo_com_vencimento_hoje_nao_e_pendencia(self):
+        Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status="EMPRESTADO",
+            data_prevista_devolucao=timezone.localdate(),
+        )
+
+        self.assertFalse(self.membro.possui_pendencia())
+
+    def test_editar_data_de_emprestimo_atrasado_sem_alterar_status(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status="ATRASADO",
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=2),
+        )
+
+        emprestimo.data_prevista_devolucao = (
+            timezone.localdate() - timedelta(days=3)
+        )
+
+        emprestimo.full_clean()
+
+        self.assertEqual(emprestimo.status, "ATRASADO")
