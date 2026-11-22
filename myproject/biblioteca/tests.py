@@ -1,12 +1,16 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.forms import modelform_factory
 from django.test import TestCase
+from django.utils import timezone
+from .models import Curso, Membro, Livro, Emprestimo
+from django.core.management import call_command
+from biblioteca.services import marcar_atrasados
 from django.core import mail
-
-from .models import Curso, Membro
 from biblioteca.utils import enviar_email
 
 from datetime import timedelta
@@ -247,6 +251,166 @@ class MembroAlunoTests(TestCase):
         )
         self.assertIsNotNone(professor.pk)
 
+
+class EmprestimoTests(TestCase):
+
+    def setUp(self):
+        self.curso = Curso.objects.create(
+            nome="Sistemas de Informação"
+        )
+
+        self.membro = Membro.objects.create(
+            nome_completo="Ana Souza",
+            tipo_membro="ALUNO",
+            ra="123",
+            curso=self.curso,
+            periodo=3,
+        )
+
+        self.livro = Livro.objects.create(
+            titulo="Livro de Teste",
+            qtd_total=5,
+            qtd_disponivel=5,
+        )
+
+    def criar_emprestimo(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+        )
+        self.livro.refresh_from_db()
+        return emprestimo
+
+    def test_emprestado_para_atrasado_nao_altera_estoque(self):
+        emprestimo = self.criar_emprestimo()
+
+        estoque_anterior = self.livro.qtd_disponivel
+
+        emprestimo.status = "ATRASADO"
+        emprestimo.save()
+
+        self.livro.refresh_from_db()
+
+        self.assertEqual(
+            self.livro.qtd_disponivel,
+            estoque_anterior
+        )
+
+    def test_atrasado_para_devolvido_devolve_unidade_ao_estoque(self):
+        emprestimo = self.criar_emprestimo()
+
+        emprestimo.status = "ATRASADO"
+        emprestimo.save()
+
+        estoque_anterior = self.livro.qtd_disponivel
+
+        emprestimo.status = "DEVOLVIDO"
+        emprestimo.save()
+
+        self.livro.refresh_from_db()
+
+        self.assertEqual(
+            self.livro.qtd_disponivel,
+            estoque_anterior + 1
+        )
+
+    def test_data_prevista_nao_e_recalculada_ao_salvar(self):
+        emprestimo = self.criar_emprestimo()
+
+        data_renovada = (
+            timezone.localdate() + timedelta(days=30)
+        )
+
+        emprestimo.data_prevista_devolucao = data_renovada
+        emprestimo.save()
+
+        emprestimo.refresh_from_db()
+
+        self.assertEqual(
+            emprestimo.data_prevista_devolucao,
+            data_renovada
+        )
+    def test_marcar_atrasados_atualiza_emprestimo_vencido(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=1),
+        )
+
+        marcar_atrasados()
+
+        emprestimo.refresh_from_db()
+        self.assertEqual(emprestimo.status, "ATRASADO")
+
+    def test_marcar_atrasados_nao_altera_emprestimo_no_prazo(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            data_prevista_devolucao=timezone.localdate() + timedelta(days=1),
+        )
+
+        marcar_atrasados()
+
+        emprestimo.refresh_from_db()
+        self.assertEqual(emprestimo.status, "EMPRESTADO")
+
+    def test_marcar_atrasados_nao_altera_estoque(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=1),
+        )
+
+        self.livro.refresh_from_db()
+        estoque_anterior = self.livro.qtd_disponivel
+
+        marcar_atrasados()
+
+        self.livro.refresh_from_db()
+        self.assertEqual(self.livro.qtd_disponivel, estoque_anterior)
+
+    def test_comando_atualizar_atrasos(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=1),
+        )
+
+        call_command("atualizar_atrasos")
+
+        emprestimo.refresh_from_db()
+        self.assertEqual(emprestimo.status, "ATRASADO")
+
+    def test_marcar_atrasados_nao_altera_emprestimo_que_vence_hoje(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            data_prevista_devolucao=timezone.localdate(),
+        )
+
+        marcar_atrasados()
+
+        emprestimo.refresh_from_db()
+        self.assertEqual(emprestimo.status, "EMPRESTADO")
+
+    def test_devolvido_para_atrasado_e_devolvido_novamente_mantem_estoque(self):
+        emprestimo = self.criar_emprestimo()
+        estoque_emprestado = self.livro.qtd_disponivel
+
+        emprestimo.status = "DEVOLVIDO"
+        emprestimo.save()
+        self.livro.refresh_from_db()
+        self.assertEqual(self.livro.qtd_disponivel, estoque_emprestado + 1)
+
+        emprestimo.status = "ATRASADO"
+        emprestimo.save()
+        self.livro.refresh_from_db()
+        self.assertEqual(self.livro.qtd_disponivel, estoque_emprestado)
+
+        emprestimo.status = "DEVOLVIDO"
+        emprestimo.save()
+        self.livro.refresh_from_db()
+        self.assertEqual(self.livro.qtd_disponivel, estoque_emprestado + 1)
 
 class MembroEmailTests(TestCase):
     def dados_professor(self, **alteracoes):
