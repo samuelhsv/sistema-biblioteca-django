@@ -1,10 +1,15 @@
 from datetime import timedelta
 from unittest.mock import patch
+from . import services
 
 from django.test import TestCase
 from django.utils import timezone
+from django.urls import reverse
 
-from biblioteca.models import Categoria, Livro, Membro
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+
+from biblioteca.models import Categoria, Livro, Membro, Curso, Emprestimo
 from reservas.models import Reserva
 
 
@@ -291,3 +296,206 @@ class QuantidadeLivreParaReservaTests(TestCase):
         self.livro.refresh_from_db()
         self.assertEqual(self.livro.qtd_disponivel, 3)
         self.assertTrue(self.livro.disponivel)
+
+
+class ReservaBaseTest(TestCase):
+    def setUp(self):
+        # substituto até a RST-01 chegar; create=True funciona mesmo sem o método
+        p = patch.object(Membro, "possui_pendencia", create=True, return_value=False)
+        p.start()
+        self.addCleanup(p.stop)
+
+        curso = Curso.objects.create(nome="Ciência da Computação")
+        self.livro = Livro.objects.create(titulo="Código Limpo", qtd_total=1, qtd_disponivel=1)
+        User = get_user_model()
+        self.user1 = User.objects.create_user("RA0001", password="x")
+        self.m1 = Membro.objects.create(nome_completo="Aluno Um", tipo_membro="ALUNO",
+                                        ra="RA0001", curso=curso, periodo=1, usuario=self.user1)
+        self.m2 = Membro.objects.create(nome_completo="Aluno Dois", tipo_membro="ALUNO",
+                                        ra="RA0002", curso=curso, periodo=1)    
+
+
+class SolicitarTests(ReservaBaseTest):
+    def test_exemplar_livre_vira_aguardando_com_prazo_24h(self):
+        reserva = services.solicitar(self.m1, self.livro)
+        self.assertEqual(reserva.status, Reserva.Status.AGUARDANDO_RETIRADA)
+        self.assertEqual(reserva.expira_em - reserva.notificada_em, services.PRAZO_RETIRADA)
+
+    def test_segunda_pessoa_entra_na_fila(self):
+        services.solicitar(self.m1, self.livro)          # fica com o único exemplar
+        reserva = services.solicitar(self.m2, self.livro)
+        self.assertEqual(reserva.status, Reserva.Status.NA_FILA)
+        self.assertEqual(reserva.posicao_na_fila(), 1)
+
+    def test_reserva_duplicada_e_recusada(self):
+        services.solicitar(self.m1, self.livro)
+        with self.assertRaises(ValidationError):
+            services.solicitar(self.m1, self.livro)
+
+    def test_membro_com_pendencia_e_recusado(self):
+        with patch.object(Membro, "possui_pendencia", create=True, return_value=True):
+            with self.assertRaises(ValidationError):
+                services.solicitar(self.m1, self.livro)
+        self.assertEqual(Reserva.objects.count(), 0)
+
+    def test_limite_de_reservas_ativas(self):
+        livros = [
+            self.livro,
+            Livro.objects.create(
+                titulo="Livro Dois",
+                qtd_total=1,
+                qtd_disponivel=1,
+            ),
+            Livro.objects.create(
+                titulo="Livro Tres",
+                qtd_total=1,
+                qtd_disponivel=1,
+            ),
+            Livro.objects.create(
+                titulo="Livro Quatro",
+                qtd_total=1,
+                qtd_disponivel=1,
+            ),
+        ]
+
+        for livro in livros[:3]:
+            services.solicitar(self.m1, livro)
+
+        with self.assertRaises(ValidationError):
+            services.solicitar(self.m1, livros[3])
+
+    def test_membro_com_livro_emprestado_nao_pode_reservar(self):
+        emprestimo = Emprestimo(
+            membro=self.m1,
+            livro=self.livro,
+        )
+        emprestimo.full_clean()
+        emprestimo.save()
+
+        with self.assertRaises(ValidationError):
+            services.solicitar(self.m1, self.livro)
+
+
+class ViewsTests(ReservaBaseTest):
+    def test_get_nao_cria_reserva(self):
+        self.client.force_login(self.user1)
+        resp = self.client.get(reverse("reservas:solicitar", args=[self.livro.pk]))
+        self.assertEqual(resp.status_code, 405)
+        self.assertEqual(Reserva.objects.count(), 0)
+
+    def test_post_cria_reserva(self):
+        self.client.force_login(self.user1)
+
+        resp = self.client.post(
+            reverse("reservas:solicitar", args=[self.livro.pk])
+        )
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(Reserva.objects.count(), 1)
+
+    def test_cancelar_reserva_de_outra_pessoa_retorna_404(self):
+        reserva = services.solicitar(self.m2, self.livro)
+
+        self.client.force_login(self.user1)
+
+        resp = self.client.post(
+            reverse("reservas:cancelar", args=[reserva.pk])
+        )
+
+        self.assertEqual(resp.status_code, 404)
+
+        reserva.refresh_from_db()
+        self.assertNotEqual(
+            reserva.status,
+            Reserva.Status.CANCELADA,
+        )
+
+    def test_cancelar_propria_reserva(self):
+        reserva = services.solicitar(self.m1, self.livro)
+
+        self.client.force_login(self.user1)
+
+        resp = self.client.post(
+            reverse("reservas:cancelar", args=[reserva.pk])
+        )
+
+        self.assertEqual(resp.status_code, 302)
+
+        reserva.refresh_from_db()
+
+        self.assertEqual(
+            reserva.status,
+            Reserva.Status.CANCELADA,
+        )
+        self.assertIsNotNone(reserva.encerrada_em)
+
+
+
+class SituacaoReservaTests(ReservaBaseTest):
+
+    def test_membro_sem_login(self):
+        situacao = services.situacao_reserva(
+            None,
+            self.livro,
+        )
+
+        self.assertEqual(
+            situacao.codigo,
+            "SEM_LOGIN",
+        )
+
+    def test_membro_com_pendencia(self):
+        with patch.object(
+            Membro,
+            "possui_pendencia",
+            create=True,
+            return_value=True,
+        ):
+            situacao = services.situacao_reserva(
+                self.m1,
+                self.livro,
+            )
+
+        self.assertEqual(
+            situacao.codigo,
+            "PENDENCIA",
+        )
+
+    def test_reserva_aguardando_retirada(self):
+        services.solicitar(self.m1, self.livro)
+
+        situacao = services.situacao_reserva(
+            self.m1,
+            self.livro,
+        )
+
+        self.assertEqual(
+            situacao.codigo,
+            "AGUARDANDO_RETIRADA",
+        )
+
+    def test_exemplar_livre(self):
+        situacao = services.situacao_reserva(
+            self.m1,
+            self.livro,
+        )
+
+        self.assertEqual(
+            situacao.codigo,
+            "LIVRE",
+        )
+
+    def test_sem_exemplar(self):
+        self.livro.qtd_disponivel = 0
+        self.livro.save()
+
+        situacao = services.situacao_reserva(
+            self.m1,
+            self.livro,
+        )
+
+        self.assertEqual(
+            situacao.codigo,
+            "SEM_EXEMPLAR",
+        )
+
