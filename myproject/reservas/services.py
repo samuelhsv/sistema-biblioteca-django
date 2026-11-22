@@ -3,6 +3,8 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+from dataclasses import dataclass
+from typing import Optional
 
 from .models import Reserva
 
@@ -65,3 +67,40 @@ def cancelar(reserva):
     reserva.save()
     if estava_aguardando:
         pass  # TODO(RES-03): promover_fila(reserva.livro)
+
+class Situacao:
+    SEM_LOGIN = "SEM_LOGIN"
+    NA_FILA = "NA_FILA"
+    AGUARDANDO_RETIRADA = "AGUARDANDO_RETIRADA"
+    PENDENCIA = "PENDENCIA"
+    LIVRE = "LIVRE"
+    SEM_EXEMPLAR = "SEM_EXEMPLAR"
+
+
+@dataclass(frozen=True)
+class SituacaoReserva:
+    codigo: str
+    reserva: Optional[Reserva] = None
+    posicao: Optional[int] = None
+    fila: int = 0
+
+
+def situacao_reserva(membro, livro):
+    """membro=None quer dizer: visitante ou usuário sem Membro vinculado."""
+    fila = Reserva.objects.filter(livro=livro, status=Reserva.Status.NA_FILA).count()
+
+    if membro is None:
+        return SituacaoReserva(Situacao.SEM_LOGIN, fila=fila)
+
+    reserva = Reserva.objects.filter(membro=membro, livro=livro, status__in=STATUS_ATIVOS).first()
+    if reserva is not None:
+        if reserva.status == Reserva.Status.AGUARDANDO_RETIRADA:
+            return SituacaoReserva(Situacao.AGUARDANDO_RETIRADA, reserva=reserva, fila=fila)
+        return SituacaoReserva(Situacao.NA_FILA, reserva=reserva,
+                               posicao=reserva.posicao_na_fila(), fila=fila)
+
+    if membro.possui_pendencia():
+        return SituacaoReserva(Situacao.PENDENCIA, fila=fila)
+    if livro.qtd_livre_para_reserva > 0:
+        return SituacaoReserva(Situacao.LIVRE, fila=fila)
+    return SituacaoReserva(Situacao.SEM_EXEMPLAR, fila=fila)
