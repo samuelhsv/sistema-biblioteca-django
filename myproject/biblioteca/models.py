@@ -276,6 +276,18 @@ class Membro(models.Model):
         self.full_clean()
         return super().save(*args, **kwargs)
 
+    def possui_pendencia(self):
+        hoje = timezone.localdate()
+
+        return self.livros_emprestados.filter(
+            models.Q(status="ATRASADO")
+            | models.Q(
+                status="EMPRESTADO",
+                data_prevista_devolucao__lt=hoje,
+            )
+        ).exists()
+
+
     def __str__(self):
         return (
             f"{self.nome_completo} "

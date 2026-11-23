@@ -1,5 +1,13 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import render, redirect
+from django.views import View
+from django.core.paginator import Paginator
+
+from .models import Membro
 
 
 def inicio(request):
@@ -15,4 +23,44 @@ def inicio(request):
         request,
         "biblioteca/inicio.html",
         {"membro": membro},
+    )
+
+class MinhaContaView(LoginRequiredMixin, View):
+    template_name = "biblioteca/minha_conta.html"
+
+    def get(self, request):
+        try:
+            membro = request.user.membro
+        except ObjectDoesNotExist:
+            messages.warning(
+                request,
+                "Seu usuário não possui um cadastro de membro."
+            )
+            return redirect("inicio")
+
+        emprestimos_ativos = membro.livros_emprestados.filter(
+            status__in=["EMPRESTADO", "ATRASADO"]
+        ).select_related("livro").order_by("data_prevista_devolucao")
+
+        reservas = membro.reservas.select_related(
+            "livro"
+        ).order_by("criada_em")
+
+        historico = membro.livros_emprestados.filter(
+            status="DEVOLVIDO"
+        ).select_related("livro").order_by("-data_devolucao")
+
+        paginador = Paginator(historico, 5)
+        pagina = request.GET.get("pagina")
+        historico_paginado = paginador.get_page(pagina)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "membro": membro,
+                "emprestimos_ativos": emprestimos_ativos,
+                "reservas": reservas,
+                "historico": historico_paginado,
+            },
     )
