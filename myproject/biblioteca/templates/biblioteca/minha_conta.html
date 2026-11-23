@@ -1,0 +1,137 @@
+{% extends "biblioteca/base.html" %}
+
+{% block content %}
+    <h1>Minha conta</h1>
+
+    <p>Olá, {{ membro.nome_completo }}!</p>
+
+    {% if membro.possui_pendencia %}
+        <div class="alert alert-danger">
+            <strong>Atenção!</strong>
+            Você possui uma devolução pendente.
+            Regularize sua situação para voltar a realizar empréstimos
+            e retirar reservas.
+        </div>
+    {% endif %}
+
+    <hr>
+
+<h2>Meus empréstimos ativos</h2>
+
+{% if emprestimos_ativos %}
+    {% for emprestimo in emprestimos_ativos %}
+        <div>
+            <h3>{{ emprestimo.livro.titulo }}</h3>
+
+            <p>
+                Data do empréstimo:
+                {{ emprestimo.data_emprestimo|date:"d/m/Y" }}
+            </p>
+
+            <p>
+                Data prevista para devolução:
+                {{ emprestimo.data_prevista_devolucao|date:"d/m/Y" }}
+            </p>
+
+            {% if emprestimo.status == "ATRASADO" %}
+                <span style="color: red;">
+                    Em atraso!
+                </span>
+            {% endif %}
+        </div>
+
+        <hr>
+    {% endfor %}
+{% else %}
+    <p>Você não possui empréstimos ativos.</p>
+{% endif %}
+<hr>
+
+<h2>Minhas reservas</h2>
+
+{% if reservas %}
+    {% for reserva in reservas %}
+        <div>
+            <h3>{{ reserva.livro.titulo }}</h3>
+
+            <p>
+                Situação: {{ reserva.get_status_display }}
+            </p>
+
+            {% if reserva.status == "NA_FILA" %}
+                <p>
+                    Posição na fila: {{ reserva.posicao_na_fila }}
+                </p>
+            {% endif %}
+
+            {% if reserva.status == "AGUARDANDO" %}
+                <p>
+                    Prazo para retirada:
+                    {% if reserva.expira_em %}
+                        {{ reserva.expira_em|date:"d/m/Y H:i" }}
+                    {% else %}
+                        Não informado
+                    {% endif %}
+                </p>
+
+                {% if reserva.esta_vencida %}
+                    <p style="color: red;">
+                        Prazo de retirada vencido!
+                    </p>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <hr>
+    {% endfor %}
+{% else %}
+    <p>Você não possui reservas.</p>
+{% endif %}
+<hr>
+
+<h2>Histórico de empréstimos</h2>
+
+{% if historico %}
+    {% for emprestimo in historico %}
+        <div>
+            <h3>{{ emprestimo.livro.titulo }}</h3>
+
+            <p>
+                Data do empréstimo:
+                {{ emprestimo.data_emprestimo|date:"d/m/Y" }}
+            </p>
+
+            <p>
+                Data da devolução:
+                {{ emprestimo.data_devolucao|date:"d/m/Y" }}
+            </p>
+
+            <p>Status: Devolvido</p>
+        </div>
+
+        <hr>
+    {% endfor %}
+
+    <div>
+        {% if historico.has_previous %}
+            <a href="?pagina={{ historico.previous_page_number }}">
+                Página anterior
+            </a>
+        {% endif %}
+
+        <span>
+            Página {{ historico.number }} de {{ historico.paginator.num_pages }}
+        </span>
+
+        {% if historico.has_next %}
+            <a href="?pagina={{ historico.next_page_number }}">
+                Próxima página
+            </a>
+        {% endif %}
+    </div>
+
+{% else %}
+    <p>Você ainda não possui empréstimos devolvidos.</p>
+{% endif %}
+
+{% endblock %}
