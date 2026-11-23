@@ -199,6 +199,7 @@ class Membro(models.Model):
         """
         self._normalizar_dados()
         super().clean_fields(exclude=exclude)
+        
 
     def clean(self):
         """Valida as regras dos perfis e a duplicidade de e-mail."""
@@ -332,6 +333,56 @@ class Emprestimo(models.Model):
         default="EMPRESTADO",
     )
 
+    qtd_renovacoes = models.PositiveSmallIntegerField(default=0)
+
+    def prazo_do_perfil(self):
+        return {
+            "ALUNO": 14,
+            "PROFESSOR": 28,
+        }.get(self.membro.tipo_membro, 7)
+
+    def pode_renovar(self):
+        if self.status != "EMPRESTADO":
+            return False, "Somente empréstimos ativos podem ser renovados."
+    
+        if self.membro.possui_pendencia():
+            return False, "Você possui pendências e não pode renovar empréstimos."
+    
+        if self.livro.reservas.filter(status="NA_FILA").exists():
+            return False, "Este livro possui pessoas na fila de espera."
+    
+        limite = self.data_emprestimo.date() + timedelta(
+            days=settings.BIBLIOTECA_LIMITE_TOTAL_DIAS
+        )
+    
+        if self.data_prevista_devolucao >= limite:
+            return False, "Este empréstimo já atingiu o limite máximo de 30 dias."
+    
+        return True, ""
+    
+    
+    def renovar(self):
+        pode, motivo = self.pode_renovar()
+    
+        if not pode:
+            raise ValidationError(motivo)
+    
+        limite = self.data_emprestimo.date() + timedelta(
+            days=settings.BIBLIOTECA_LIMITE_TOTAL_DIAS
+        )
+    
+        nova_data = min(
+            self.data_prevista_devolucao + timedelta(days=self.prazo_do_perfil()),
+            limite,
+        )
+    
+        self.data_prevista_devolucao = nova_data
+        self.qtd_renovacoes += 1
+    
+        self.save(
+            update_fields=["data_prevista_devolucao", "qtd_renovacoes"]
+        )
+
     history = HistoricalRecords()
 
     def clean(self):
@@ -380,8 +431,9 @@ class Emprestimo(models.Model):
 
         if not self.data_prevista_devolucao and self.membro_id:
             base_date = (self.data_emprestimo or timezone.now()).date()
-            dias = {"ALUNO": 14, "PROFESSOR": 28}.get(self.membro.tipo_membro, 7)
-            self.data_prevista_devolucao = base_date + timedelta(days=dias)
+            self.data_prevista_devolucao = (
+                base_date + timedelta(days=self.prazo_do_perfil())
+            )
 
         with transaction.atomic(using=banco):
             anterior = None
@@ -444,3 +496,4 @@ class Emprestimo(models.Model):
             f"{self.livro.titulo} emprestado para "
             f"{self.membro.nome_completo} ({self.status})"
         )
+

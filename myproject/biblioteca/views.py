@@ -1,11 +1,10 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.shortcuts import render
+from django.core.paginator import Paginator
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render, redirect
+from django.utils import timezone
 from django.views import View
-from django.core.paginator import Paginator
 
 from .models import Membro
 
@@ -41,6 +40,18 @@ class MinhaContaView(LoginRequiredMixin, View):
         emprestimos_ativos = membro.livros_emprestados.filter(
             status__in=["EMPRESTADO", "ATRASADO"]
         ).select_related("livro").order_by("data_prevista_devolucao")
+
+        hoje = timezone.localdate()
+
+        for emprestimo in emprestimos_ativos:
+            diferenca = (
+                emprestimo.data_prevista_devolucao - hoje
+            ).days
+
+            emprestimo.dias_restantes = max(diferenca, 0)
+            emprestimo.dias_atraso = max(-diferenca, 0)
+            emprestimo.vence_hoje = diferenca == 0
+
 
         reservas = membro.reservas.select_related(
             "livro"
