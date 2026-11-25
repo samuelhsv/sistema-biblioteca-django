@@ -3,6 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.html import format_html
 from simple_history.admin import SimpleHistoryAdmin
+from django.core.exceptions import ValidationError
 
 from .models import Autor, Categoria, Curso, Emprestimo, Livro, Membro
 
@@ -107,7 +108,10 @@ class EmprestimoAdmin(SimpleHistoryAdmin):
     )
     autocomplete_fields = ("membro", "livro")
     list_select_related = ("membro", "livro")
-    actions = ("marcar_como_devolvido", "atualizar_atrasos_agora")
+    actions = ("marcar_como_devolvido", 
+               "atualizar_atrasos_agora", 
+               "renovar_selecionados",
+               )
 
     @admin.display(description="Status", ordering="status")
     def status_colorido(self, obj):
@@ -187,6 +191,30 @@ class EmprestimoAdmin(SimpleHistoryAdmin):
             f"{total} empréstimo(s) atualizado(s) para ATRASADO."
         )
 
+    @admin.action(description="Renovar empréstimos selecionados")
+    def renovar_selecionados(self, request, queryset):
+        renovados = ignorados = 0
+
+        for emprestimo in queryset:
+            try:
+                emprestimo.renovar()
+                renovados += 1
+            except ValidationError:
+                ignorados += 1
+
+        if renovados:
+            self.message_user(
+                request,
+                f"{renovados} empréstimo(s) renovado(s) com sucesso.",
+                messages.SUCCESS,
+            )
+
+        if ignorados:
+            self.message_user(
+                request,
+                f"{ignorados} empréstimo(s) não puderam ser renovados.",
+                messages.WARNING,
+            )
 
 @admin.register(Livro)
 class LivroAdmin(SimpleHistoryAdmin):
