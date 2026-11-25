@@ -34,5 +34,13 @@
     {% else %}
         <p>Não foram encontradas divergências nesta conferência.</p>
     {% endif %}
+    {% if itens_nao_conferidos %}
+    <h2>Itens ainda não conferidos</h2>
+    <ul>
+        {% for item in itens_nao_conferidos %}
+            <li>{{ item.livro }} - Aguardando conferência</li>
+        {% endfor %}
+    </ul>
+{% endif %}
 </div>
 {% endblock %}
