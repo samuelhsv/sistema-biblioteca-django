@@ -33,9 +33,17 @@
                 {{ emprestimo.data_prevista_devolucao|date:"d/m/Y" }}
             </p>
 
-            {% if emprestimo.status == "ATRASADO" %}
-                <span style="color: red;">
-                    Em atraso!
+            {% if emprestimo.dias_atraso > 0 %}
+                <span style="color: red; font-weight: bold;">
+                    Em atraso há {{ emprestimo.dias_atraso }} dia(s)!
+                </span>
+            {% elif emprestimo.vence_hoje %}
+                <span style="color: orange; font-weight: bold;">
+                    Devolução prevista para hoje!
+                </span>
+            {% else %}
+                <span style="color: green;">
+                    Restam {{ emprestimo.dias_restantes }} dia(s) para devolver.
                 </span>
             {% endif %}
         </div>
