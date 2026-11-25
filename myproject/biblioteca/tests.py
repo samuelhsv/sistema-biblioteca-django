@@ -12,6 +12,9 @@ from django.core.management import call_command
 from biblioteca.services import marcar_atrasados
 from django.core import mail
 from biblioteca.utils import enviar_email
+from reservas.models import Reserva
+from django.contrib.auth import get_user_model
+from django.urls import reverse
 
 
 class MembroAlunoTests(TestCase):
@@ -326,6 +329,128 @@ class EmprestimoTests(TestCase):
             emprestimo.data_prevista_devolucao,
             data_renovada
         )
+
+    def test_renovar_emprestimo_com_sucesso(self):
+        emprestimo = self.criar_emprestimo()
+        data_anterior = emprestimo.data_prevista_devolucao
+
+        emprestimo.renovar()
+
+        emprestimo.refresh_from_db()
+
+        self.assertEqual(
+            emprestimo.data_prevista_devolucao,
+            data_anterior + timedelta(days=14)
+        )
+        self.assertEqual(emprestimo.qtd_renovacoes, 1)
+
+    def test_nao_permite_renovar_apos_limite_de_30_dias(self):
+        emprestimo = self.criar_emprestimo()
+
+        limite = (
+            emprestimo.data_emprestimo.date() + timedelta(days=30)
+        )
+        emprestimo.data_prevista_devolucao = limite
+        emprestimo.save()
+
+        pode_renovar, motivo = emprestimo.pode_renovar()
+
+        self.assertFalse(pode_renovar)
+
+        with self.assertRaises(ValidationError):
+            emprestimo.renovar()
+
+    def test_nao_permite_renovar_emprestimo_atrasado(self):
+        emprestimo = self.criar_emprestimo()
+        emprestimo.status = "ATRASADO"
+        emprestimo.save()
+
+        pode_renovar, motivo = emprestimo.pode_renovar()
+
+        self.assertFalse(pode_renovar)
+
+        with self.assertRaises(ValidationError):
+            emprestimo.renovar()
+
+    def test_nao_permite_renovar_quando_existe_fila_de_reserva(self):
+        emprestimo = self.criar_emprestimo()
+        data_anterior = emprestimo.data_prevista_devolucao
+
+        Reserva.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status=Reserva.Status.NA_FILA,
+        )
+
+        pode_renovar, motivo = emprestimo.pode_renovar()
+
+        self.assertFalse(pode_renovar)
+
+        with self.assertRaises(ValidationError):
+            emprestimo.renovar()
+
+        emprestimo.refresh_from_db()
+
+        self.assertEqual(
+            emprestimo.data_prevista_devolucao,
+            data_anterior,
+        )
+        self.assertEqual(emprestimo.qtd_renovacoes, 0)
+
+    def test_membro_nao_pode_renovar_emprestimo_de_outra_pessoa(self):
+        emprestimo = self.criar_emprestimo()
+        data_original = emprestimo.data_prevista_devolucao
+
+        Usuario = get_user_model()
+        usuario = Usuario.objects.create_user(
+            username="pedro",
+            password="senha123",
+        )
+
+        outro_membro = Membro.objects.create(
+            nome_completo="Pedro Santos",
+            tipo_membro="ALUNO",
+            ra="456",
+            curso=self.curso,
+            periodo=2,
+            usuario=usuario,
+        )
+
+        self.client.login(
+            username="pedro",
+            password="senha123",
+        )
+
+        resposta = self.client.post(
+            reverse("renovar_emprestimo", args=[emprestimo.pk])
+        )
+
+        self.assertEqual(resposta.status_code, 404)
+
+        emprestimo.refresh_from_db()
+
+        self.assertEqual(
+            emprestimo.data_prevista_devolucao,
+            data_original,
+        )
+        self.assertEqual(emprestimo.qtd_renovacoes, 0)
+
+       
+
+    def test_usuario_nao_autenticado_nao_pode_renovar(self):
+        emprestimo = self.criar_emprestimo()
+
+        resposta = self.client.post(
+            reverse("renovar_emprestimo", args=[emprestimo.pk])
+        )
+
+        self.assertEqual(resposta.status_code, 302)
+
+        emprestimo.refresh_from_db()
+
+        self.assertEqual(emprestimo.qtd_renovacoes, 0)
+
+
     def test_marcar_atrasados_atualiza_emprestimo_vencido(self):
         emprestimo = Emprestimo.objects.create(
             membro=self.membro,
@@ -388,6 +513,8 @@ class EmprestimoTests(TestCase):
 
         emprestimo.refresh_from_db()
         self.assertEqual(emprestimo.status, "EMPRESTADO")
+
+    
 
     def test_devolvido_para_atrasado_e_devolvido_novamente_mantem_estoque(self):
         emprestimo = self.criar_emprestimo()
