@@ -13,6 +13,10 @@ from biblioteca.services import marcar_atrasados
 from django.core import mail
 from biblioteca.utils import enviar_email
 
+from datetime import timedelta
+from django.utils import timezone
+from .models import Curso, Emprestimo, Livro, Membro
+
 
 class MembroAlunoTests(TestCase):
     def setUp(self):
@@ -760,3 +764,112 @@ class EmailTests(TestCase):
         self.assertIn("Olá, Usuário de teste!", mail.outbox[0].body)
         self.assertIn("Este é um e-mail de teste", mail.outbox[0].body)
         self.assertIn("Biblioteca FLUI", mail.outbox[0].body)
+        
+class BloqueioEmprestimoPendenciaTests(TestCase):
+    def setUp(self):
+        self.curso = Curso.objects.create(nome="Ciência da Computação")
+        self.membro = Membro.objects.create(
+            nome_completo="Ana Souza",
+            tipo_membro="ALUNO",
+            ra="12345",
+            curso=self.curso,
+            periodo=4,
+        )
+        self.livro = Livro.objects.create(
+            titulo="Clean Code",
+            qtd_total=3,
+            qtd_disponivel=3,
+        )
+        self.outro_livro = Livro.objects.create(
+            titulo="Domain-Driven Design",
+            qtd_total=3,
+            qtd_disponivel=3,
+        )
+
+    def test_membro_com_emprestimo_atrasado_nao_consegue_novo_emprestimo(self):
+        Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status="ATRASADO",
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=2),
+        )
+
+        self.assertTrue(self.membro.possui_pendencia())
+
+        novo = Emprestimo(membro=self.membro, livro=self.outro_livro)
+        with self.assertRaises(ValidationError) as ctx:
+            novo.full_clean()
+
+        self.assertIn("membro", ctx.exception.message_dict)
+
+    def test_membro_com_emprestimo_vencido_ainda_emprestado_nao_consegue_novo_emprestimo(self):
+        Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status="EMPRESTADO",
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=1),
+        )
+
+        self.assertTrue(self.membro.possui_pendencia())
+
+        novo = Emprestimo(membro=self.membro, livro=self.outro_livro)
+        with self.assertRaises(ValidationError) as ctx:
+            novo.full_clean()
+
+        self.assertIn("membro", ctx.exception.message_dict)
+
+    def test_membro_regular_consegue_novo_emprestimo(self):
+        self.assertFalse(self.membro.possui_pendencia())
+
+        emprestimo = Emprestimo(membro=self.membro, livro=self.livro)
+        emprestimo.full_clean()
+        emprestimo.save()
+
+        self.assertEqual(Emprestimo.objects.count(), 1)
+
+    def test_devolver_livro_atrasado_continua_permitido_e_libera_bloqueio(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status="ATRASADO",
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=2),
+        )
+        self.assertTrue(self.membro.possui_pendencia())
+
+        emprestimo.status = "DEVOLVIDO"
+        emprestimo.data_devolucao = timezone.localdate()
+        emprestimo.full_clean()
+        emprestimo.save()
+
+        self.assertFalse(self.membro.possui_pendencia())
+
+        novo = Emprestimo(membro=self.membro, livro=self.outro_livro)
+        novo.full_clean()
+        novo.save()
+        self.assertEqual(Emprestimo.objects.count(), 2)
+
+    def test_emprestimo_com_vencimento_hoje_nao_e_pendencia(self):
+        Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status="EMPRESTADO",
+            data_prevista_devolucao=timezone.localdate(),
+        )
+
+        self.assertFalse(self.membro.possui_pendencia())
+
+    def test_editar_data_de_emprestimo_atrasado_sem_alterar_status(self):
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=self.livro,
+            status="ATRASADO",
+            data_prevista_devolucao=timezone.localdate() - timedelta(days=2),
+        )
+
+        emprestimo.data_prevista_devolucao = (
+            timezone.localdate() - timedelta(days=3)
+        )
+
+        emprestimo.full_clean()
+
+        self.assertEqual(emprestimo.status, "ATRASADO")

@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.html import format_html
 from simple_history.admin import SimpleHistoryAdmin
@@ -49,7 +49,33 @@ class EmprestimoInline(admin.TabularInline):
     def has_add_permission(self, request, obj=None):
         return False
 
+class SituacaoMembroFilter(admin.SimpleListFilter):
+    title = "Situação"
+    parameter_name = "situacao"
 
+    def lookups(self, request, model_admin):
+        return [
+            ("regular", "Regular"),
+            ("bloqueado", "Bloqueado"),
+        ]
+
+    def queryset(self, request, queryset):
+        hoje = timezone.localdate()
+        pendentes = Emprestimo.objects.filter(
+            membro=models.OuterRef("pk")
+        ).filter(
+            models.Q(status="ATRASADO")
+            | models.Q(
+                status="EMPRESTADO",
+                data_prevista_devolucao__lt=hoje,
+            )
+        )
+        if self.value() == "bloqueado":
+            return queryset.filter(models.Exists(pendentes))
+        if self.value() == "regular":
+            return queryset.exclude(models.Exists(pendentes))
+        return queryset
+    
 @admin.register(Membro)
 class MembroAdmin(SimpleHistoryAdmin):
     autocomplete_fields = ("usuario",)
@@ -62,9 +88,10 @@ class MembroAdmin(SimpleHistoryAdmin):
         "curso",
         "periodo",
         "email",
+        "situacao_regular",
     )
 
-    list_filter = ("tipo_membro", "curso")
+    list_filter = ("tipo_membro", "curso", SituacaoMembroFilter)
     search_fields = ("nome_completo", "ra", "siape", "email")
     list_select_related = ("curso",)
     inlines = (EmprestimoInline,)
@@ -85,7 +112,9 @@ class MembroAdmin(SimpleHistoryAdmin):
             {"fields": ("ra", "siape", "curso", "periodo")},
         ),
     )
-
+    @admin.display(boolean=True, description="Situação (Regular)")
+    def situacao_regular(self, obj):
+        return not obj.possui_pendencia()
 
 @admin.register(Emprestimo)
 class EmprestimoAdmin(SimpleHistoryAdmin):
