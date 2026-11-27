@@ -90,3 +90,53 @@ class PainelAdministrativoTests(TestCase):
         self.assertEqual(self.client.post(url, dados).status_code, 302)
         livro.refresh_from_db()
         self.assertEqual(livro.qtd_disponivel, 3)
+
+    def test_acao_verifica_inconsistencia_do_estoque(self):
+        livro = Livro.objects.create(
+            titulo="Livro com estoque inconsistente",
+            categoria=self.categoria,
+            qtd_total=3,
+            qtd_disponivel=2,
+        )
+
+        url = reverse("admin:biblioteca_livro_changelist")
+        dados = {
+            "action": "verificar_consistencia_estoque",
+            "_selected_action": [livro.pk],
+            "index": 0,
+        }
+
+        resposta = self.client.post(url, dados, follow=True)
+
+        self.assertContains(resposta, "Inconsistências encontradas")
+        self.assertContains(resposta, "Livro com estoque inconsistente")
+
+    def test_acao_considera_emprestimos_atrasados(self):
+        livro = Livro.objects.create(
+            titulo="Livro com emprestimo atrasado",
+            categoria=self.categoria,
+            qtd_total=3,
+            qtd_disponivel=3,
+        )
+
+        emprestimo = Emprestimo.objects.create(
+            membro=self.membro,
+            livro=livro
+        )
+
+        emprestimo.status = "ATRASADO"
+        emprestimo.save(update_fields=["status"])
+
+        url = reverse("admin:biblioteca_livro_changelist")
+        dados = {
+            "action": "verificar_consistencia_estoque",
+            "_selected_action": [livro.pk],
+            "index": 0,
+        }
+
+        resposta = self.client.post(url, dados, follow=True)
+
+        self.assertContains(
+            resposta,
+            "Estoque consistente para todos os livros selecionados."
+        )

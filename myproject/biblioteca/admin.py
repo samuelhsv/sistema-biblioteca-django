@@ -241,6 +241,7 @@ class LivroAdmin(SimpleHistoryAdmin):
     list_filter = ("categoria", "disponivel")
     search_fields = ("titulo", "autores__primeiro_nome", "autores__sobrenome")
     filter_horizontal = ("autores",)
+    actions = ["verificar_consistencia_estoque"]
 
     def save_model(self, request, obj, form, change):
         if not change:
@@ -258,3 +259,33 @@ class LivroAdmin(SimpleHistoryAdmin):
                 obj.capa.url,
             )
         return "Sem imagem"
+
+    @admin.action(description="Verificar consistência do estoque")
+    def verificar_consistencia_estoque(self, request, queryset):
+        inconsistencias = []
+
+        for livro in queryset:
+            emprestimos_ativos = livro.livros_emprestados.filter(
+                status__in=("EMPRESTADO", "ATRASADO")
+            ).count()
+
+            emprestimos_registrados = livro.qtd_total - livro.qtd_disponivel
+
+            if emprestimos_registrados != emprestimos_ativos:
+                inconsistencias.append(
+                    f"{livro.titulo}: estoque indica {emprestimos_registrados} "
+                    f"emprestado(s), mas existem {emprestimos_ativos} empréstimo(s) ativo(s)."
+                )
+
+        if inconsistencias:
+            self.message_user(
+                request,
+                "Inconsistências encontradas: " + " | ".join(inconsistencias)
+            )
+        else:
+            self.message_user(
+                request,
+                "Estoque consistente para todos os livros selecionados."
+            )
+
+    
